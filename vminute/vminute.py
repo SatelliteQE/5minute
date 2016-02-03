@@ -129,7 +129,8 @@ def progress(title=None, result=None):
     else:
         PROGRESS += 1
         if PROGRESS % 20 == 0:
-            sys.stdout.write("\b" * 20)
+            sys.stdout.write("\b" * 19)
+            PROGRESS += 1
         sys.stdout.write(CHARS[int(math.ceil(PROGRESS / 20)) % len(CHARS)])
     sys.stdout.flush()
 
@@ -650,18 +651,30 @@ class DeleteInstanceClass(ServerClass):
             else:
                 self.kill_instances(argv[0])
 
-    @catch_exception("The problem deleting of the instances.")
+#    @catch_exception("The problem deleting of the instances.")
     def kill_instances(self, id):
         server = self.get_instances(id)
+        progress(title="Release floating IP:")
         fips = self.nova.floating_ips.findall(instance_id=server.id)
         for fip in fips:
             server.remove_floating_ip(fip.ip)
             self.nova.floating_ips.delete(fip.id)
+        progress(result="DONE")
         vols = self.nova.volumes.get_server_volumes(server.id)
-        for vol in vols:
-            self.nova.volumes.delete_server_volume(server.id, vol.id)
-            vol.delete()
+        if len(vols) > 0:
+            progress(title="Release volumes:")
+            for vol in vols:
+                progress()
+                cvol = self.cinder.volumes.get(vol.id)
+                cvol.detach()
+                cvol.delete()
+            progress(result="SCHEDULED")
+        progress(title="Delete instance:")
         server.delete()
+        while len(self.nova.servers.findall(id=server.id)) > 0:
+            time.sleep(1)
+            progress()
+        progress(result="DONE")
 
     def help(self):
         print """
@@ -766,7 +779,7 @@ class BootInstanceClass(ServerClass):
          """
 
     def __setup_networking(self):
-        progress(title='Chossing the privete network:')
+        progress(title='Chossing the private network:')
         network = self.get_stable_private_network()
         progress(result=network['private']['name'])
         progress(title='Obtaining a floating IP:')
@@ -865,13 +878,13 @@ class BootInstanceClass(ServerClass):
         counter = 60
         reg_login = re.compile(r".*login:\s*$")
         reg_warning = re.compile(r"(warning)", re.I)
-        reg_error = re.compile(r"(error|failed)", re.I)
+        reg_error = re.compile(r"(error)", re.I)
         if show_output:
             print "Booting of the instance:"
         else:
             progress(title="Booting of the instance:")
+        output = server.get_console_output().splitlines()
         while counter > 0 and exit_status is None:
-            output = server.get_console_output().splitlines()
             nindex = len(output) - 1
             if lindex >= nindex:
                 counter -= 1
@@ -883,6 +896,7 @@ class BootInstanceClass(ServerClass):
                         counter = 0
                         if exit_status is None:
                             exit_status = True
+                        break
                     if reg_warning.search(line):
                         patern = "\x1b[92;01m%s\x1b[39;49;00m\n"
                     if reg_error.search(line):
@@ -894,6 +908,8 @@ class BootInstanceClass(ServerClass):
                         progress()
                     time.sleep(1)
                 lindex = nindex + 1
+            if exit_status is None:
+                output = server.get_console_output(30).splitlines()
         if not show_output:
             progress(result=exit_message)
         if exit_status is None:
