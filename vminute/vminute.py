@@ -369,7 +369,7 @@ class BaseClass(object):
                 5minute boot --help
                 5minute boot 5minute-RHEL6
                 5minute boot --name myRHEL6 5minute-RHEL6
-                5minute scenario --help
+                5minute scenarios --help
         """
 
 
@@ -737,8 +737,9 @@ class BootInstanceClass(ServerClass):
         if "floating-ip" in self.variables and self.variables.get("floating-ip"):
             self.nova.floating_ips.delete(self.variables['floating-ip'])
 
-#    @catch_exception()
+    @catch_exception()
     def boot_instance(self):
+        self._check_key()
         with disable_catch_exception():
             try:
                 self.__setup_networking()
@@ -931,19 +932,23 @@ class ScenarioClass(ServerClass):
 
     def help(self):
         print """
-         Usage: 5minute scenario <COMMAND> [PARAM]
+         Usage: 5minute scenarios <COMMAND> [PARAM]
          Managing scenaros
 
          COMMAND:
             help                -   show this help
-            templates           -   show list of templates
+            templates           -   show the list of templates
+            list                -   show the list of scenarios
             boot                -   create new scenario/stack
+            del|kill            -   delete scenario
 
          Examples:
-             5minute scenarion help
-             5minute scenarion templates
-             5minute scenarion boot template1
-             5minute scenarion boot --name myscenario template1
+             5minute scenarios help
+             5minute scenarios templates
+             5minute scenarios list
+             5minute scenarios boot template1
+             5minute scenarios boot --name myscenario template1
+             5minute scenarios del myscenario
 
          """
 
@@ -963,15 +968,20 @@ class TemplateScenarioClass(ScenarioClass):
             self.help()
             return 0
         else:
-            print "\n".join(self.__get_list_templates())
+            x = PrettyTable(["Name", ])
+            x.align["Name"] = "l"
+            for row in self.__get_list_templates():
+                print row
+                x.add_row([row, ])
+            print x.get_string(sortby="Name")
 
     def help(self):
         print """
-         Usage: 5minute scenario templates
+         Usage: 5minute scenarios templates
          Show the list of available templates
 
          Examples:
-             5minute scenarion templates
+             5minute scenarios templates
 
          """
 
@@ -1061,7 +1071,7 @@ class BootScenarioClass(ScenarioClass):
 
     def help(self):
         print """
-         Usage: 5minute scenario boot [PARAM] <TEMPLATE-NAME>
+         Usage: 5minute scenarios boot [PARAM] <TEMPLATE-NAME>
          Boot new scenaro
 
          PARAM:
@@ -1069,8 +1079,8 @@ class BootScenarioClass(ScenarioClass):
              <TEMPLATE-NAME>    The name of template
 
          Examples:
-             5minute scenarion boot template1
-             5minute scenarion boot --name myscenario template1
+             5minute scenarios boot template1
+             5minute scenarios boot --name myscenario template1
 
          """
 
@@ -1137,15 +1147,15 @@ class DeleteScenarioClass(ScenarioClass):
 
     def help(self):
         print """
-         Usage: 5minute (del|kill|delete) <NAME|ID>
-         Delete instance.
+         Usage: 5minute scenarios (del|kill|delete) <NAME|ID>
+         Delete scenario.
 
          PARAM:
-             <NAME|ID>   Name or ID of instance
+             <NAME|ID>   The name of the scenario
 
          Examples:
-             5minute delete 5minute-RHEL6
-             5minute kill 5minute-RHEL6
+             5minute scenarios delete 5minute-RHEL6
+             5minute scenarios kill 5minute-RHEL6
          """
 
 # -----------------------------------------------------------
