@@ -189,13 +189,12 @@ class BaseClass(object):
     __check_env_done = False
 
     @catch_exception(
-        "The configuration file ~/.5minute/config or ~/.5minute/local.conf does not exist.\n"
+        "The configuration file ~/.5minute/config does not exist.\n"
         "Please download the OpenStack RC file from OpenStack WebUI (Access & Security > API Access "
-        "> Download OpenStack RC file) and save it to ~/.5minute/config, or create and "
-        "edit ~/.5minute/local.conf.\n")
+        "> Download OpenStack RC file) and save it to ~/.5minute/config.\n")
     def __load_configuration(self):
         if not os.path.isfile(self.__tmpconf):
-            subprocess.check_call("source {config_loc}/config.new; env | grep OS_ >> {tmpfile}"
+            subprocess.check_call("source {config_loc}/config; env | grep OS_ >> {tmpfile}"
                                   .format(config_loc=CONF_DIR, tmpfile=self.__tmpconf), shell=True)
         lines = []
         with open(os.path.expanduser(self.__tmpconf), "r") as fd:
@@ -214,21 +213,11 @@ class BaseClass(object):
                 not os.environ.get('OS_TENANT_NAME') or \
                 not os.environ.get('OS_USERNAME') or \
                 not os.environ.get('OS_PASSWORD'):
-                # not os.environ.get('OS_SINGLE_BOOT_EXTERNAL_NETWORK') or \
-                # not os.environ.get('OS_SINGLE_BOOT_INTERNAL_NETWORK'):
             if not self.__first_check:
                 self.__load_configuration()
                 self.__first_check = True
                 self.__checkenv()
             else:
-                if not os.environ.get('OS_SINGLE_BOOT_EXTERNAL_NETWORK') or\
-                   not os.environ.get('OS_SINGLE_BOOT_INTERNAL_NETWORK'):
-                    die("OS_SINGLE_BOOT_EXTERNAL_NETWORK and OS_SINGLE_BOOT_INTERNAL_NETWORK variables must be "
-                        "defined in {config_loc}/local.conf. Please specify (using ID) which network will be used "
-                        "for the external network access and which internal OpenStack network will be used to "
-                        "assign an IP address to instance itself. Network ID can be found by the command "
-                        "'neutron net-list'".format(config_loc=CONF_DIR))
-
                 die("The configuration file %s/config doesn't contain all important variables.\n" % CONF_DIR)
         self.__profiles = "%s/%s" % (CONF_DIR, self.__profiles)
         if not os.path.isdir(os.path.expanduser(self.__profiles)):
@@ -339,9 +328,7 @@ class BaseClass(object):
     def __get_scenario(self, filename):
         xml = None
         try:
-            xml = urllib2.urlopen('https://code.engineering.redhat.com/gerrit/gitweb?'
-                                  'p=SystemsManagementQATools.git;a=blob_plain;'
-                                  'f=5minute/scenarios/%s' % filename).read()
+            xml = urllib2.urlopen('https://example.com/scenarios/%s' % filename).read()
         except:
             warning("This profile '%s' doesn't exist." % filename)
             return dict()
