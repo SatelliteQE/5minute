@@ -1,4 +1,10 @@
-=== QuickStart ===
+5minute
+=======
+
+Give me an instance of mine image on OpenStack. Hurry!
+
+QuickStart
+----------
 
 To run 5minute you need to install following libs:
     python-keystoneclient
@@ -56,4 +62,5 @@ Get started:
     $ 5minute scenario boot <scenario_template_name>
 
   When finished with the scenario, you should delete it:
+
     $ 5minute scenario delete <scenario_name_or_id>
