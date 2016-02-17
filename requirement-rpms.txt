@@ -1,0 +1,4 @@
+python-cinderclient
+python-heatclient
+python-neutronclient
+python-xmltodict

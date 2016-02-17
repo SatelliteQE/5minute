@@ -15,6 +15,8 @@ To run 5minute you need to install following libs:
     xmltodict
     lprettytable
 
+To install them from RPMs (Fedora), please do `dnf -y install $( cat requirement-rpms.txt )`.
+
 If you have installed 5minute using pip, they were installed as dependencies. Otherwise, you have to install them manually.
 
 Get config file:
