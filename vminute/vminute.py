@@ -30,7 +30,8 @@ try:
     from keystoneclient import session as keystoneSession
     import xmltodict
 except ImportError, ie:
-    print(ie.message)
+    sys.stderr.write(ie.message+"\n")
+    sys.exit(1)
 
 try:
     # Python 2.7
