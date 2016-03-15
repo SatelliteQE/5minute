@@ -712,8 +712,11 @@ class BootInstanceClass(ServerClass):
         if len(argv) != 1:
             die("The name of image is ambiguous or empty.")
         params['image'] = self.get_image(argv.pop(0))
+        self.add_variable('image', params['image'].name)
+        self.add_variable('image_id', params['image'].id)
         if 'name' not in params:
             params['name'] = "%s-%s" % (USER, params['image'].name)
+        self.add_variable('name', params['name'])
         return params
 
     @catch_exception("Bad parameter. Please try 5minute boot --help.")
@@ -743,8 +746,8 @@ class BootInstanceClass(ServerClass):
         with disable_catch_exception():
             try:
                 self.__setup_networking()
-                self.__setup_userdata_script(self.params['image'])
                 self.__setup_volume(self.params['image'])
+                self.__setup_userdata_script(self.params['image'])
                 self.__create_instance(self.params['image'])
             except Exception, ex:
                 self.__release_resources()
@@ -784,7 +787,7 @@ class BootInstanceClass(ServerClass):
         self.add_variable('hostname', hostname)
         progress(result=hostname)
 
-    @catch_exception("The problem with downloading of the userdata script for this image")
+#    @catch_exception("The problem with downloading of the userdata script for this image")
     def __setup_userdata_script(self, image):
         res = None
         filename = None
@@ -795,7 +798,7 @@ class BootInstanceClass(ServerClass):
         if filename:
             progress(title='Loading the userdata script:')
             cscript = urllib.urlopen(filename).read()
-            self.params['cscript'] = cscript.format(self.variable)
+            self.params['cscript'] = cscript.format(**self.variables)
             progress(result="DONE")
 
     def __setup_volume(self, image):
