@@ -1,4 +1,10 @@
-=== QuickStart ===
+5minute
+=======
+
+Give me an instance of mine image on OpenStack. Hurry!
+
+QuickStart
+----------
 
 To run 5minute you need to install following libs:
     python-keystoneclient
@@ -8,6 +14,8 @@ To run 5minute you need to install following libs:
     python-novaclient
     xmltodict
     lprettytable
+
+To install them from RPMs (Fedora), please do `dnf -y install $( cat requirement-rpms.txt )`.
 
 If you have installed 5minute using pip, they were installed as dependencies. Otherwise, you have to install them manually.
 
@@ -56,4 +64,5 @@ Get started:
     $ 5minute scenario boot <scenario_template_name>
 
   When finished with the scenario, you should delete it:
+
     $ 5minute scenario delete <scenario_name_or_id>
