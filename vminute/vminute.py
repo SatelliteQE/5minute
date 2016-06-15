@@ -685,6 +685,7 @@ class BootInstanceClass(ServerClass):
     ufile = ""
     default_flavor = "m1.medium"
     variables = None
+    created_volume = False
 
     def __parse_params(self, opts, argv, flavor=default_flavor):
         params = {'flavor': self.get_flavor(flavor).id}
@@ -738,8 +739,13 @@ class BootInstanceClass(ServerClass):
         self.variables[key] = val
 
     def __release_resources(self):
-        if "floating-ip" in self.variables and self.variables.get("floating-ip"):
+        if "floating-ip" in self.variables and \
+                self.variables.get("floating-ip"):
             self.nova.floating_ips.delete(self.variables['floating-ip'])
+        if self.created_volume:
+            cvol = self.cinder.volumes.get(self.volume.id)
+            cvol.detach()
+            cvol.delete()
 
     @catch_exception()
     def boot_instance(self):
@@ -830,6 +836,7 @@ class BootInstanceClass(ServerClass):
         if vol.status == 'error':
             raise Exception("The problem with creating of the volume.")
         progress(result="DONE")
+        self.created_volume = True
         return vol
 
     def __create_instance(self, image):
