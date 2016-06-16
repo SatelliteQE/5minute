@@ -797,15 +797,18 @@ class BootInstanceClass(ServerClass):
 #    @catch_exception("The problem with downloading of the userdata script for this image")
     def __setup_userdata_script(self, image):
         res = None
-        filename = None
+        filenames = None
         if "userdata" in self.params:
-            filename = self.params['userdata']
+            filenames = self.params['userdata']
         elif "cscripts" in image.metadata:
-            filename = image.metadata['cscripts']
-        if filename:
+            filenames = image.metadata['cscripts']
+        if filenames:
             progress(title='Loading the userdata script:')
-            cscript = urllib.urlopen(filename).read()
-            self.params['cscript'] = cscript.format(**self.variables)
+            self.params['cscript'] = ""
+            for filename in filenames.split():
+                cscript = urllib.urlopen(filename).read()
+                self.params['cscript'] += cscript.format(**self.variables)
+                self.params['cscript'] += "\n"
             progress(result="DONE")
 
     def __setup_volume(self, image):
@@ -863,6 +866,8 @@ class BootInstanceClass(ServerClass):
 #            print server.progress
         if status == 'ACTIVE':
             progress(result="DONE")
+            progress(title="Instance name:")
+            progress(result=self.params.get('name'))
         else:
             progress(result="FAIL")
         if "floating-ip" in self.variables:
