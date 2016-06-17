@@ -643,10 +643,10 @@ class DeleteInstanceClass(ServerClass):
     def kill_instances(self, id):
         server = self.get_instances(id)
         progress(title="Release floating IP:")
+        # This is stupid method for checking of lock, if it is activated
         fips = self.nova.floating_ips.findall(instance_id=server.id)
         for fip in fips:
             server.remove_floating_ip(fip.ip)
-            self.nova.floating_ips.delete(fip.id)
         progress(result="DONE")
         vols = self.nova.volumes.get_server_volumes(server.id)
         if len(vols) > 0:
@@ -654,15 +654,39 @@ class DeleteInstanceClass(ServerClass):
             for vol in vols:
                 progress()
                 cvol = self.cinder.volumes.get(vol.id)
-                cvol.detach()
-                cvol.delete()
-            progress(result="SCHEDULED")
+                self.cinder.volumes.begin_detaching(cvol)
+            progress(result="DONE")
         progress(title="Delete instance:")
-        server.delete()
-        while len(self.nova.servers.findall(id=server.id)) > 0:
-            time.sleep(1)
-            progress()
-        progress(result="DONE")
+        done = False
+        try:
+            server.delete()
+            done = True
+            while len(self.nova.servers.findall(id=server.id)) > 0:
+                time.sleep(1)
+                progress()
+            progress(result="DONE")
+        except Exception as e:
+            if 'locked' in e.message:
+                progress(result="\x1b[31;01mLOCKED\x1b[39;49;00m")
+            else:
+                progress(result="FAIL")
+        for fip in fips:
+            if done:
+                self.nova.floating_ips.delete(fip.id)
+            else:
+                server.add_floating_ip(fip.ip)
+        for vol in vols:
+            cvol = self.cinder.volumes.get(vol.id)
+            if done:
+                progress(title="Delete volume:")
+                cvol.delete()
+                while len(self.cinder.volumes.findall(id=cvol.id)) > 0:
+                    time.sleep(1)
+                    progress()
+                progress(result="DONE")
+            else:
+                self.cinder.volumes.roll_detaching(cvol)
+
 
     def help(self):
         print """
