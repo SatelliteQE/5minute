@@ -1,5 +1,5 @@
 #!/usr/bin/python
-
+ # -*- coding: utf8 -*-
 
 import getopt
 import os
@@ -118,16 +118,16 @@ def progress(title=None, result=None):
             progress(result="GOOD")
 
     """
-    CHARS = ('.', '*', '@', '#')
+    CHARS = ('.', '-', '=', '_')
     global PROGRESS
     if title:
         PROGRESS = 0
         sys.stdout.write("%s" % title.ljust(40, " "))
-    elif result:
+    if result:
         sys.stdout.write("%s\x1b[92;01m%s\x1b[39;49;00m\n" %
                          ("\b" * (PROGRESS % 20), result.ljust(20, " ")))
         PROGRESS = None
-    else:
+    if title is None and result is None:
         PROGRESS += 1
         if PROGRESS % 20 == 0:
             sys.stdout.write("\b" * 19)
@@ -711,14 +711,14 @@ class BootInstanceClass(ServerClass):
     variables = None
     created_volume = False
 
-    def __parse_params(self, opts, argv, flavor=default_flavor):
-        params = {'flavor': self.get_flavor(flavor).id}
+    def __parse_params(self, opts, argv):
+        params = {}
         for key, val in opts:
             if key in ('--help', '-h') or 'help' in argv:
                 params['help'] = True
                 return params
             elif key in ('--flavor', '-f'):
-                params['flavor'] = val
+                params['flavor'] = self.get_flavor(val)
             elif key in ('--console', '-c'):
                 params['console'] = True
             elif key in ('--name', '-n'):
@@ -779,6 +779,7 @@ class BootInstanceClass(ServerClass):
                 self.__setup_networking()
                 self.__setup_volume(self.params['image'])
                 self.__setup_userdata_script(self.params['image'])
+                self.__choose_flavor(self.params['image'])
                 self.__create_instance(self.params['image'])
             except Exception, ex:
                 self.__release_resources()
@@ -795,6 +796,7 @@ class BootInstanceClass(ServerClass):
               -v, --volume    the volume snapshot (default: 5minute-satellite5-rpms)
               --novolume      no voluume snapshot
               -c, --console   display the console output during booting
+              --userdata      the paths or URLs to cloud-init scripts
 
          Examples:
              5minute boot 5minute-RHEL6
@@ -848,14 +850,16 @@ class BootInstanceClass(ServerClass):
                 except cinder_exceptions.NotFound as ex:
                     pass
                 if self.volume is None:
-                    # The volume_name is name of snapshot, we create new volume from it
+                    # The volume_name is name of snapshot,
+                    # we create new volume from it
                     self.volume = self.__create_new_volume(volume_name, image)
 
     def __create_new_volume(self, volume_name, image):
         progress(title="Creating a new volume:")
         snap = self.get_snapshot(volume_name)
         name = self.params.get('name', "%s-%s" % (USER, image.name))
-        vol = self.cinder.volumes.create(size=snap.size, snapshot_id=snap.id, display_name=name)
+        vol = self.cinder.volumes.create(size=snap.size, snapshot_id=snap.id,
+                                         display_name=name)
         while vol.status == 'creating':
             progress()
             time.sleep(1)
@@ -866,11 +870,25 @@ class BootInstanceClass(ServerClass):
         self.created_volume = True
         return vol
 
+    def __choose_flavor(self, image):
+        progress(title="Used  flavor:")
+        if 'flavor' not in self.params:
+            if 'default_flavor' in image.metadata:
+                self.params['flavor'] =\
+                    self.get_flavor(image.metadata.get('default_flavor'))
+            if self.params.get('flavor') is None:
+                self.params['flavor'] =\
+                    self.get_flavor(self.default_flavor)
+        flavor = ("{name} (RAM: {ram} MB, vCPU: {vcpus}, disk: {disk} GB)")\
+            .format(**self.params['flavor'].__dict__)
+        progress(result=flavor)
+
     def __create_instance(self, image):
+        progress(title="Instance name:", result=self.params.get('name'))
         progress("Creating a new instance:")
         param_dict = {'name': self.params.get('name'),
                       'image': image.id,
-                      'flavor': self.get_flavor(self.params.get('flavor')).id,
+                      'flavor': self.params.get('flavor').id,
                       'key_name': USER,
                       'nics': [{'net-id': self.variables['private-net']}],
                       'meta': {'fqdn': self.variables["hostname"]},
@@ -890,8 +908,6 @@ class BootInstanceClass(ServerClass):
 #            print server.progress
         if status == 'ACTIVE':
             progress(result="DONE")
-            progress(title="Instance name:")
-            progress(result=self.params.get('name'))
         else:
             progress(result="FAIL")
         if "floating-ip" in self.variables:
