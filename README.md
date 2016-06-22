@@ -23,7 +23,7 @@ Get config file:
 
   1. Login into your OpenStack instance WebUI
   2. Navigate to Access & Security -> API Access
-  3. Save file from "Download OpenStack RC File" to ~/.5minute/config.new
+  3. Save file from "Download OpenStack RC File" to ~/.5minute/config
 
 Get started:
 
