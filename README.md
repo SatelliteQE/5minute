@@ -7,13 +7,14 @@ QuickStart
 ----------
 
 To run 5minute you need to install following libs:
+
     python-keystoneclient
     python-cinderclient
     python-heatclient
     python-neutronclient
     python-novaclient
-    xmltodict
-    lprettytable
+    python-xmltodict
+    python-prettytable
 
 To install them from RPMs (Fedora), please do `dnf -y install $( cat requirement-rpms.txt )`.
 
