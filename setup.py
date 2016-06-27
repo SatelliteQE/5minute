@@ -6,25 +6,23 @@ from os import path
 
 here = path.abspath(path.dirname(__file__))
 
-# Get the long description from the README file
-with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
+with open(path.join(here, 'README'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name='vminute',
-    version='0.1',
+    name='5minute',
+    version='0.2.1',
     description='A tool for quick creation and deployment of Openstack machines used for QA testing.',
     long_description=long_description,
-    # FIXME Enter correct github url, not just url made-up from the thin air.
-    url='https://github.com/vminute',
+    url='https://github.com/SatelliteQE/5minute',
     author='Martin Korbel',
     author_email='mkorbel@redhat.com',
-    license='Apache Software License',
+    license='GNU General Public License v2 (GPLv2)',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Information Technology',
         'Topic :: Software Development :: Quality Assurance',
-        'License :: OSI Approved :: Apache Software License',
+        'License :: OSI Approved :: GNU General Public License v2 (GPLv2)',
     ],
     keywords='openstack testing deployment',
     install_requires=['python-keystoneclient',
@@ -33,14 +31,14 @@ setup(
                       'python-neutronclient',
                       'python-novaclient',
                       'xmltodict',
-                      'lprettytable'],
+                      'prettytable'],
     packages=find_packages(),
     package_data={
         'vminute': ['scenarios/README']
     },
     entry_points={
         'console_scripts': [
-            'vminute=vminute:main_main'
+            '5minute=vminute:main_main'
         ]
     }
 )
