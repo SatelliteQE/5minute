@@ -186,7 +186,7 @@ class BaseClass(object):
     __first_check = False
     __tmpconf = "/tmp/5minute.conf"
     __profiles = "profiles/"
-    _scenarios = "./vminute/scenarios/"
+    __scenarios = "scenarios/"
     __check_env_done = False
 
     @catch_exception(
@@ -220,18 +220,16 @@ class BaseClass(object):
                 self.__checkenv()
             else:
                 die("The configuration file %s/config doesn't contain all important variables.\n" % CONF_DIR)
-        self.__profiles = "%s/%s" % (CONF_DIR, self.__profiles)
-        if not os.path.isdir(os.path.expanduser(self.__profiles)):
+        if not os.path.isdir(os.path.expanduser(os.path.join(CONF_DIR, self.__profiles))):
             try:
-                os.makedirs(os.path.expanduser(self.__profiles))
+                os.makedirs(os.path.expanduser(os.path.join(CONF_DIR, self.__profiles)))
             except OSError:
-                die("The problem with creating of folder '%s'." % self.__profiles)
-        self.__scenarios = "%s/%s" % (CONF_DIR, self.__scenarios)
-        if not os.path.isdir(os.path.expanduser(self.__scenarios)):
+                die("The problem with creating of folder '%s'." % os.path.join(CONF_DIR, self.__profiles))
+        if not os.path.isdir(os.path.expanduser(os.path.join(CONF_DIR, self.__scenarios))):
             try:
-                os.makedirs(os.path.expanduser(self.__scenarios))
+                os.makedirs(os.path.expanduser(os.path.join(CONF_DIR, self.__scenarios)))
             except OSError:
-                die("The problem with creating of folder '%s'." % self.__scenarios)
+                die("The problem with creating of folder '%s'." % os.path.join(CONF_DIR, self.__scenarios))
         self.__check_env_done = True
 
     @catch_exception("Your SSL pub-key is not yet uploaded on the server. "
