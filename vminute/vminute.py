@@ -348,7 +348,7 @@ class BaseClass(object):
                 help        - this help
                 key         - upload your SSL key on the server
                 images      - the list of accessible images
-                flavor      - the list of flavors
+                flavors     - the list of flavors
                 list        - the list of instances
                 delete      - delete a quest
                 boot        - create a new quest
@@ -361,7 +361,7 @@ class BaseClass(object):
                 5minute images -h
                 5minute images --all
                 5minute images satellite
-                5minute flavor
+                5minute flavors
                 5minute list
                 5minute list --all
                 5minute list satellite
