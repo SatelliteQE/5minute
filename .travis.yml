@@ -10,9 +10,8 @@ install:
   - "pip install -r requirements.txt"
 script:
   - echo "Just deploy"
-before_deploy:
-  - "pandoc --from=markdown --to=rst --output=README README.md"
 deploy:
+  skip_cleanup: true
   #test pypi
 - provider: pypi
   distributions: sdist
