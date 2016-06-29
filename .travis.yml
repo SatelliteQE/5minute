@@ -11,9 +11,9 @@ install:
 script:
   - echo "Just deploy"
 deploy:
-  skip_cleanup: true
   #test pypi
 - provider: pypi
+  skip_cleanup: true
   distributions: sdist
   server: https://testpypi.python.org/pypi
   user: rdrazny
@@ -26,6 +26,7 @@ deploy:
 
   #live pypi
 - provider: pypi
+  skip_cleanup: true
   distributions: sdist
   user: rdrazny
   password:
