@@ -1,19 +1,34 @@
 language: python
 python:
 - '2.7'
+before_install:
+  - "apt-get install pandoc"
+  - "pandoc --from=markdown --to=rst --output=README README.md"
 install:
   - "pip install ."
   - "pip install -r requirements.txt"
 script:
   - echo "Just deploy"
 deploy:
+  #test pypi
 - provider: pypi
   distributions: sdist
   server: https://testpypi.python.org/pypi
   user: rdrazny
   password:
-    secure: orE1JYvuWqn7oZ2sVzRtgkLeR82KmPxRuJ9bnq4ny80uZ63F+OfhN8s5P2tpDz5UsjBJrropqmwg8fwg0z7RVZv/6H4y9D+CbKhTka5eONeItD/de5yWIdyRVCIBmpDDKhshlM/aYcy6MyY9WyYSfY+Nn2rgZOBqkMoCZdZmfuSbUML8PmfiGQ7aOo7YONCKI1CUVHrhvi3xXCETGV/tuT8oTivAwWXkME1jqqHAH5kJ95jzxxt4fat/5zQrpMmSyGtIYyBUrWmcvln/Skcpyax0wO83bBUw4dwjq4d+yoAyMLyUF2YqZo4wJvDya0/KBbivMBX2B5wsLp4WXXXvwymMGr6ct6GZNFlkprtM/ozmtqeOBbJGiqvy43vmw+RpyPDKd2bWj8SSa3UlXAUoN0yRzPpTX+z7DT2X9VUso7TKw2Qsv2zwBb6HR21ZfNALDAh6SD/xFTF8FZ57onxwyIA5HRd/T+KrLSSQy3ipajoxZNbhq8TaFvmGase9MxwybGwzL15ikx1r76LVO+ZaSfoRDXXJJQUy2lM4bNsHG8YJ7hK2Hjzbq56MuWxw91xHGc802X4251KM032FPP3GepVAhpLVbMmWOQkeaT42z3cZxTVSm1rzKqXVWJ7cN6PBahlfXPdr2yJsZK0iLfd6oX4X/7vcAw8QV181HFZIRbo=
+    secure: "orE1JYvuWqn7oZ2sVzRtgkLeR82KmPxRuJ9bnq4ny80uZ63F+OfhN8s5P2tpDz5UsjBJrropqmwg8fwg0z7RVZv/6H4y9D+CbKhTka5eONeItD/de5yWIdyRVCIBmpDDKhshlM/aYcy6MyY9WyYSfY+Nn2rgZOBqkMoCZdZmfuSbUML8PmfiGQ7aOo7YONCKI1CUVHrhvi3xXCETGV/tuT8oTivAwWXkME1jqqHAH5kJ95jzxxt4fat/5zQrpMmSyGtIYyBUrWmcvln/Skcpyax0wO83bBUw4dwjq4d+yoAyMLyUF2YqZo4wJvDya0/KBbivMBX2B5wsLp4WXXXvwymMGr6ct6GZNFlkprtM/ozmtqeOBbJGiqvy43vmw+RpyPDKd2bWj8SSa3UlXAUoN0yRzPpTX+z7DT2X9VUso7TKw2Qsv2zwBb6HR21ZfNALDAh6SD/xFTF8FZ57onxwyIA5HRd/T+KrLSSQy3ipajoxZNbhq8TaFvmGase9MxwybGwzL15ikx1r76LVO+ZaSfoRDXXJJQUy2lM4bNsHG8YJ7hK2Hjzbq56MuWxw91xHGc802X4251KM032FPP3GepVAhpLVbMmWOQkeaT42z3cZxTVSm1rzKqXVWJ7cN6PBahlfXPdr2yJsZK0iLfd6oX4X/7vcAw8QV181HFZIRbo="
   on:
     branch: master
     tags: false
+    condition: $TRAVIS_PYTHON_VERSION = "2.7"
+
+  #live pypi
+- provider: pypi
+  distributions: sdist
+  user: rdrazny
+  password:
+    secure: "YoUVrooz8gKCc+gmrbckyCrJVpcryYkRvnLTCK9tjGjdIGNrC7DtJcNkgtweD5HuZ4VGD9K9RJN9koMukV6LAIMNwQvscZQyUz79LSivCFHL3766Pp/P7TX7JeNybHvDcdZKw1vyI/5nzYeY2y9KOvyuIsAi3sTTQukyGMLA6yXYDaMWhPzPVyM/llFZkFdCyKpu3syLj+vfRgOYk+jlUXamsOh+jMy/L21tf3LGWNX0Fon/taUPAF7r294MuK3+MGIrzxjrV+H3L8DcKsOulDBRgijZpUylDAJyqKFYGHJBACldgqJinL7OUxMpqKCwTDmStYCwil2VSxY3ot1xE+lDmTVbfPG3G/zo4owjn3hVJ4xMva2iNb5RU+SDC/pJdg2r7VfdfcU1Zpo1g12s1J+UyCJLIXHy7fEikSO8eMX1F+EqIeabbWqJfqb5KQZ4xLo+EtMM0NWpsAuYozrdyiP9X+niRv/QhYGkaDBvvMQPIosR+utKHYDDZ8dWgYsOgxqOquyO4bSGfLhNtuGZQ4h3FhkhjwjLXAjHxLSfdUzpJ4+Zkf1PqKIWA2WUeKHUxG7UZM4gnu3qoBU1ihDJitLxv3UpRO+e1CAWD33Br2Y/cdcvZnkD9E7QhqiVR/STVzhLdPM/NiZMv4J+ucqn7OyWo/cvYUrDbmR/FDaEZZg="
+  on:
+    branch: master
+    tags: true
     condition: $TRAVIS_PYTHON_VERSION = "2.7"
