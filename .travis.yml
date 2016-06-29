@@ -2,13 +2,15 @@ language: python
 python:
 - '2.7'
 sudo: required
+before_install:
+  - "sudo apt-get install pandoc"
+  - "pandoc --from=markdown --to=rst --output=README README.md"
 install:
   - "pip install ."
   - "pip install -r requirements.txt"
 script:
   - echo "Just deploy"
 before_deploy:
-  - "sudo apt-get install pandoc"
   - "pandoc --from=markdown --to=rst --output=README README.md"
 deploy:
   #test pypi
