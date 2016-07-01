@@ -219,26 +219,26 @@ class BaseClass(object):
                 self.__first_check = True
                 self.__checkenv()
             else:
-                die("The configuration file %s/config doesn't contain all important variables.\n" % CONF_DIR)
+                die("The configuration file %s/config doesn't contain all required variables.\n" % CONF_DIR)
         if not os.path.isdir(os.path.expanduser(os.path.join(CONF_DIR, self.__profiles))):
             try:
                 os.makedirs(os.path.expanduser(os.path.join(CONF_DIR, self.__profiles)))
             except OSError:
-                die("The problem with creating of folder '%s'." % os.path.join(CONF_DIR, self.__profiles))
+                die("Problem while creating the profiles folder '%s'." % os.path.join(CONF_DIR, self.__profiles))
         if not os.path.isdir(os.path.expanduser(os.path.join(CONF_DIR, self.__scenarios))):
             try:
                 os.makedirs(os.path.expanduser(os.path.join(CONF_DIR, self.__scenarios)))
             except OSError:
-                die("The problem with creating of folder '%s'." % os.path.join(CONF_DIR, self.__scenarios))
+                die("Problem while creating the scenarios folder '%s'." % os.path.join(CONF_DIR, self.__scenarios))
         self.__check_env_done = True
 
-    @catch_exception("Your SSL pub-key is not yet uploaded on the server. "
+    @catch_exception("Your SSL pub-key is not uploaded to the server yet. "
                      "Please use: 5minute key ~/.ssh/id_dsa.pub")
     def _check_key(self):
         self.nova.keypairs.get(USER)
 
-    @catch_exception("Problem with connection to OpenStack. Please, check the configuration file "
-                     "~/.5minute/config. (maybe OS_PASSWORD is not explicite value or is not set up in env)")
+    @catch_exception("Problem connecting to the OpenStack sever. Please, check the configuration file "
+                     "~/.5minute/config. (maybe OS_PASSWORD is not an explicit value or is not set up in env)")
     def __check_connection(self):
         try:
             self.__nova.authenticate()
@@ -323,13 +323,13 @@ class BaseClass(object):
             return self.__get_neutron()
         return None
 
-    @catch_exception("The problem with parsing of profile XML file. ")
+    @catch_exception("The problem parsing profile XML file. ")
     def __get_scenario(self, filename):
         xml = None
         try:
             xml = urllib2.urlopen('https://example.com/scenarios/%s' % filename).read()
         except:
-            warning("This profile '%s' doesn't exist." % filename)
+            warning("Profile '%s' doesn't exist." % filename)
             return dict()
         return xmltodict.parse(xml)
 
@@ -346,7 +346,7 @@ class BaseClass(object):
 
             COMMANDS:
                 help        - this help
-                key         - upload your SSL key on the server
+                key         - upload your SSL key to the server
                 images      - the list of accessible images
                 flavor      - the list of flavors
                 list        - the list of instances
@@ -373,13 +373,13 @@ class BaseClass(object):
 
 
 class KeyClass(BaseClass):
-    @catch_exception("The problem with uploading of public key.")
+    @catch_exception("The problem with public key upload.")
     def __upload_key(self, key):
         if not os.access(key, os.R_OK):
             die("SSL key '%s' is not readable." % key)
         with open(key) as fd:
             self.nova.keypairs.create(USER, fd.read())
-            print "The key %s was successfully uploaded." % key
+            print "The key %s was uploaded successfully." % key
 
     def cmd(self, argv):
         if len(argv) == 0 or argv[0] in ('help', '--help', '-h'):
@@ -390,7 +390,7 @@ class KeyClass(BaseClass):
     def help(self):
         print """
             Usage: 5minute key <SSL-PUB-KEY>
-            Upload your SSL key on the OpenStack server.
+            Upload your SSL key to the OpenStack server.
 
             Examples:
                 5minute key ~/.ssh/id_dsa.pub
@@ -400,7 +400,7 @@ class KeyClass(BaseClass):
 class ImagesClass(BaseClass):
     __filter = "5minute-"
 
-    @catch_exception("The problem getting list of images.")
+    @catch_exception("Problem getting the list of images.")
     def __images(self):
         images = self.nova.images.list()
         x = PrettyTable(["Name", "ID", "Status"])
@@ -430,7 +430,7 @@ class ImagesClass(BaseClass):
 
         PARAM:
             -a, --all   show all accessible images
-            <REGEXP>    we can use a regular expression for the filtering of the result
+            <REGEXP>    we can use a regular expression for the result filtering
 
         Examples:
             5minute images
@@ -442,7 +442,7 @@ class ImagesClass(BaseClass):
 
 class FlavorClass(BaseClass):
 
-    @catch_exception("The problem getting list of flavors.")
+    @catch_exception("Problem getting list of flavors.")
     def __flavors(self):
         flavors = self.nova.flavors.list()
         x = PrettyTable(["Name", "CPU", "RAM", "HDD", "ephemeral", "swap"])
@@ -476,7 +476,7 @@ class FlavorClass(BaseClass):
 class ServerClass(BaseClass):
 
     @catch_exception("The instance doesn't exist.", nova_exceptions.NotFound)
-    @catch_exception("The name of the instance is ambiguous, please use ID.", nova_exceptions.NoUniqueMatch)
+    @catch_exception("Name of the instance is ambiguous, please use ID.", nova_exceptions.NoUniqueMatch)
     def get_instances(self, id):
         if re.match(r'^[0-9a-f\-]+$', id) is None:
             return self.nova.servers.find(name=id)
@@ -484,7 +484,7 @@ class ServerClass(BaseClass):
             return self.nova.servers.get(id)
 
     @catch_exception("The image doesn't exist.", nova_exceptions.NotFound)
-    @catch_exception("The name of the image is ambiguous, please use ID.", nova_exceptions.NoUniqueMatch)
+    @catch_exception("Name of the image is ambiguous, please use ID.", nova_exceptions.NoUniqueMatch)
     def get_image(self, id):
         if re.match(r'^[0-9a-f\-]+$', id) is None:
             return self.nova.images.find(name=id)
@@ -492,7 +492,7 @@ class ServerClass(BaseClass):
             return self.nova.images.get(id)
 
     @catch_exception("The volume doesn't exist.", cinder_exceptions.NotFound)
-    @catch_exception("The name of the volume is ambiguous, please use ID.", cinder_exceptions.NoUniqueMatch)
+    @catch_exception("Name of the volume is ambiguous, please use ID.", cinder_exceptions.NoUniqueMatch)
     def get_volume(self, id):
         if re.match(r'^[0-9a-f\-]+$', id) is None:
             return self.cinder.volumes.find(name=id)
@@ -514,7 +514,7 @@ class ServerClass(BaseClass):
         else:
             return self.nova.flavors.get(id)
 
-    @catch_exception("The problem with getting of the list of networks.")
+    @catch_exception("Problem getting list of networks.")
     def get_networks(self, filter=None):
         def test_net(net, filter):
             if filter is None:
@@ -595,7 +595,7 @@ class ListInstancesClass(ServerClass):
                 filter = argv[0]
         self.list_instances(filter)
 
-    @catch_exception("The problem with getting of the list of instances.")
+    @catch_exception("Problem getting list of instances.")
     def list_instances(self, filter):
         instances = self.nova.servers.list(search_opts={"name": filter})
         x = PrettyTable(["Name", "ID", "Status", "FQDN"])
@@ -613,7 +613,7 @@ class ListInstancesClass(ServerClass):
 
         PARAM:
             -a, --all   show all accessible instances
-            <REGEXP>    we can use a regular expression for the filtering of the result
+            <REGEXP>    we can use a regular expression the result filtering
 
         Examples:
             5minute list
@@ -629,7 +629,7 @@ class DeleteInstanceClass(ServerClass):
     """
     def cmd(self, argv):
         if len(argv) == 0:
-            die("Missing parameter. Please try 5minute delete <name|id>.")
+            die("Missing a parameter. Please try 5minute delete <name|id>.")
         else:
             if argv[0] in ('help', '--help', '-h'):
                 self.help()
@@ -734,7 +734,7 @@ class BootInstanceClass(ServerClass):
             else:
                 die("Bad parameter '%s'. Please try 5minute boot --help." % key)
         if len(argv) != 1:
-            die("The name of image is ambiguous or empty.")
+            die("Name of the image is ambiguous or empty.")
         params['image'] = self.get_image(argv.pop(0))
         self.add_variable('image', params['image'].name)
         self.add_variable('image_id', params['image'].id)
@@ -786,7 +786,7 @@ class BootInstanceClass(ServerClass):
     def help(self):
         print """
          Usage: 5minute boot [PARAM]  <IMAGE-NAME|IMAGE-ID>
-         Boot new instance.
+         Boot a new instance.
 
          PARAM:
               -n, --name      name of the instance
@@ -801,20 +801,20 @@ class BootInstanceClass(ServerClass):
          """
 
     def __setup_networking(self):
-        progress(title='Chossing the private network:')
+        progress(title='Choosing a private network:')
         network = self.get_stable_private_network()
         progress(result=network['private']['name'])
         progress(title='Obtaining a floating IP:')
         floating_ip = self.nova.floating_ips.create(network['public']['id'])
         if not floating_ip:
-            raise Exception("The problem with getting of IP address.")
+            raise Exception("Problem getting an IP address.")
         self.add_variable('floating-ip', floating_ip)
         self.add_variable('private-net', network['private']['id'])
         progress(result=floating_ip.ip)
         progress(title='Obtaining a domain name:')
         hostname = get_FQDN_from_IP(floating_ip.ip)
         if not hostname:
-            raise Exception("The problem with getting of DNS record.")
+            raise Exception("Problem getting a DNS record.")
         self.add_variable('hostname', hostname)
         progress(result=hostname)
 
@@ -863,7 +863,7 @@ class BootInstanceClass(ServerClass):
             time.sleep(1)
             vol = self.get_volume(vol.id)
         if vol.status == 'error':
-            raise Exception("The problem with creating of the volume.")
+            raise Exception("Problem creating a volume.")
         progress(result="DONE")
         self.created_volume = True
         return vol
@@ -1055,7 +1055,7 @@ class BootScenarioClass(ScenarioClass):
             else:
                 die("Bad parameter '%s'. Please try 5minute scenario boot --help." % key)
         if len(argv2) != 1:
-            die("You have to set name of template. Please try 5minute scenario boot --help.")
+            die("You have to provide a template name. Please try 5minute scenario boot --help.")
         template_name = argv2.pop(0)
         if template_name == 'help':
             self.help()
@@ -1074,7 +1074,7 @@ class BootScenarioClass(ScenarioClass):
         return template
 
     def __crate_stack(self, params):
-        progress(title="Creating of scenario:")
+        progress(title="Creating scenario:")
         params['name'] = "%s-%s" % (USER, params['template_name'] if 'name' not in params else params['name'])
         current_biggest_network, free_ips = self.get_network()
         stack = self.heat.stacks.create(stack_name=params['name'], template=params['template'], parameters={
@@ -1090,18 +1090,18 @@ class BootScenarioClass(ScenarioClass):
                                         })
         uid = stack['stack']['id']
         stack = self.heat.stacks.get(stack_id=uid).to_dict()
-        while stack['stack_status'] == 'CREATE_IN_PROGRESS':
+        while stack['stack_status'] == 'CREATION_IN_PROGRESS':
             progress()
             stack = self.heat.stacks.get(stack_id=uid).to_dict()
             time.sleep(3)
-        if stack['stack_status'] == 'CREATE_COMPLETE':
+        if stack['stack_status'] == 'CREATION_COMPLETE':
             progress(result="DONE")
             for it in stack['outputs']:
                 print "{key}: {val}".format(key=it['output_key'], val=it['output_value'])
             print "Stack succesfully created."
         else:
             progress(result="FAIL")
-            die("Stack fall to unknow status: {}".format(stack))
+            die("Stack fail for a unknown reason: {}".format(stack))
 
     def __get_count_free_ip(self, net, flist):
         address_size = 32
@@ -1129,8 +1129,8 @@ class BootScenarioClass(ScenarioClass):
          Boot new scenaro
 
          PARAM:
-             -n, --name         Name of scenario
-             <TEMPLATE-NAME>    The name of template
+             -n, --name         Name of a scenario
+             <TEMPLATE-NAME>    Name of a template
 
          Examples:
              5minute scenarios boot template1
@@ -1153,7 +1153,7 @@ class ListScenarioClass(ScenarioClass):
                 filter = argv[0]
         self.list_scenarios(filter)
 
-    @catch_exception("The problem with getting of the list of scenarios.")
+    @catch_exception("Problem getting a list of scenarios.")
     def list_scenarios(self, filter):
         scenarios = self.heat.stacks.list(search_opts={"name": filter})
         x = PrettyTable(["Name", "ID", "Status", "Template"])
@@ -1167,7 +1167,7 @@ class ListScenarioClass(ScenarioClass):
     def help(self):
         print """
         Usage: 5minute scenarios list [PARAM]
-        Show the list of scenarios. By default, it shows only your scenarios.
+        Show a list of scenarios. By default, it shows only your scenarios.
 
         PARAM:
             -a, --all   show all accessible scenarios
@@ -1186,7 +1186,7 @@ class DeleteScenarioClass(ScenarioClass):
     """
     def cmd(self, argv):
         if len(argv) == 0:
-            die("Missing parameter. Please try 5minute scenario delete <name|id>.")
+            die("Missing a parameter. Please try 5minute scenario delete <name|id>.")
         else:
             if argv[0] in ('help', '--help', '-h'):
                 self.help()
@@ -1194,7 +1194,7 @@ class DeleteScenarioClass(ScenarioClass):
             else:
                 self.kill_scenario(argv[0])
 
-    @catch_exception("The problem with deleting of the scenario.")
+    @catch_exception("Problem deleting the scenario.")
     def kill_scenario(self, id):
         scenario = self.get_scenario(id)
         scenario.delete()
@@ -1219,9 +1219,9 @@ class DeleteScenarioClass(ScenarioClass):
 
 def main(argv):
     if 'novaclient' not in sys.modules:
-        die("Please install python-novaclient (maybe 'yum -y install python-novaclient'?)")
+        die("Please install the python-novaclient package (maybe 'pip install python-novaclient'?)")
     if 'xmltodict' not in sys.modules:
-        die("Please install python-xmltodict (maybe 'yum -y install python-xmltodict'?)")
+        die("Please install the python-xmltodict package (maybe 'pip install python-xmltodict'?)")
 
     cmd = None
     if len(argv) > 0:
