@@ -3,11 +3,12 @@ python:
 - '2.7'
 sudo: required
 before_install:
-  - "sudo apt-get install pandoc pep8"
+  - "sudo apt-get install pandoc"
   - "pandoc --from=markdown --to=rst --output=README README.md"
 install:
   - "pip install ."
   - "pip install -r requirements.txt"
+  - "pip install pep8"
 script:
   - pep8 --max-line-length=120 vminute/vminute.py
 deploy:
