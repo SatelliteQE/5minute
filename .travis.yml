@@ -9,7 +9,7 @@ install:
   - "pip install ."
   - "pip install -r requirements.txt"
 script:
-  - pep8 vminute/vminute.py
+  - pep8 --max-line-length=120 vminute/vminute.py
 deploy:
   #test pypi
 - provider: pypi
