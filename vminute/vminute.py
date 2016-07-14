@@ -1,5 +1,5 @@
 #!/usr/bin/python
- # -*- coding: utf8 -*-
+# -*- coding: utf8 -*-
 
 import getopt
 import os
@@ -685,7 +685,6 @@ class DeleteInstanceClass(ServerClass):
             else:
                 self.cinder.volumes.roll_detaching(cvol)
 
-
     def help(self):
         print """
          Usage: 5minute (del|kill|delete) <NAME|ID>
@@ -1253,4 +1252,3 @@ def main(argv):
 
 if __name__ == "__main__":
     main(sys.argv[1:])
-

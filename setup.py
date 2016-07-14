@@ -10,6 +10,7 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, 'README'), encoding='utf-8') as f:
     long_description = f.read()
 
+
 def get_version():
     VERSIONFILE = path.join('vminute', '__init__.py')
     initfile_lines = open(VERSIONFILE, 'rt').readlines()
