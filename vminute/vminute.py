@@ -871,7 +871,7 @@ class BootInstanceClass(ServerClass):
     def __create_new_volume(self, volume_name, image):
         progress(title="Creating a new volume:")
         snap = self.get_snapshot(volume_name)
-        name = self.variables.get('name') #self.params.get('name', "%s-%s" % (USER, image.name))
+        name = self.variables.get('name')
         vol = self.cinder.volumes.create(size=snap.size, snapshot_id=snap.id,
                                          display_name=name)
         while vol.status == 'creating':
@@ -900,7 +900,7 @@ class BootInstanceClass(ServerClass):
     def __create_instance(self, image):
         progress(title="Instance name:", result=self.variables.get('name'))
         progress("Creating a new instance:")
-        param_dict = {'name': self.variables.get('name'), #self.params.get('name'),
+        param_dict = {'name': self.variables.get('name'),
                       'image': image.id,
                       'flavor': self.params.get('flavor').id,
                       'key_name': USER,
