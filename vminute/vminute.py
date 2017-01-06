@@ -635,7 +635,8 @@ class DeleteInstanceClass(ServerClass):
                 self.help()
                 return 0
             else:
-                self.kill_instances(argv[0])
+                for it in argv:
+                    self.kill_instances(it)
 
 #    @catch_exception("The problem deleting of the instances.")
     def kill_instances(self, id):
@@ -735,11 +736,10 @@ class BootInstanceClass(ServerClass):
         if len(argv) != 1:
             die("Name of the image is ambiguous or empty.")
         params['image'] = self.get_image(argv.pop(0))
-        self.add_variable('image', params['image'].name)
-        self.add_variable('image_id', params['image'].id)
         if 'name' not in params:
             params['name'] = "%s-%s" % (USER, params['image'].name)
-        self.add_variable('name', params['name'])
+        else:
+            params['name'] = "%s-%s" % (USER, params['name'])
         return params
 
     @catch_exception("Bad parameter. Please try 5minute boot --help.")
@@ -773,11 +773,28 @@ class BootInstanceClass(ServerClass):
         self._check_key()
         with disable_catch_exception():
             try:
-                self.__setup_networking()
-                self.__setup_volume(self.params['image'])
-                self.__setup_userdata_script(self.params['image'])
-                self.__choose_flavor(self.params['image'])
-                self.__create_instance(self.params['image'])
+                images = [self.params['image'], ]
+                dep_images = self.params['image']\
+                    .metadata.get('dependencies', "").split()
+                for img_name in dep_images:
+                    images = [self.get_image(img_name), ] + images
+                dep_IPs = dict()
+                for image in images:
+                    self.variables = dict()
+                    self.add_variable('image', image.name)
+                    self.add_variable('image_id', image.id)
+                    dep_name = 'dep%s-ip' % len(dep_IPs)
+                    if self.params['image'] == image:
+                        self.add_variable('name', self.params['name'])
+                        self.variables.update(dep_IPs)
+                    else:
+                        self.add_variable('name', "%s-%s" % (USER, image.name))
+                    self.__setup_networking()
+                    dep_IPs[dep_name] = self.variables.get('floating-ip').ip
+                    self.__setup_volume(image)
+                    self.__setup_userdata_script(image)
+                    self.__choose_flavor(image)
+                    self.__create_instance(image)
             except Exception, ex:
                 self.__release_resources()
                 die(str(ex), exception=ex)
@@ -854,7 +871,7 @@ class BootInstanceClass(ServerClass):
     def __create_new_volume(self, volume_name, image):
         progress(title="Creating a new volume:")
         snap = self.get_snapshot(volume_name)
-        name = self.params.get('name', "%s-%s" % (USER, image.name))
+        name = self.variables.get('name')
         vol = self.cinder.volumes.create(size=snap.size, snapshot_id=snap.id,
                                          display_name=name)
         while vol.status == 'creating':
@@ -881,9 +898,9 @@ class BootInstanceClass(ServerClass):
         progress(result=flavor)
 
     def __create_instance(self, image):
-        progress(title="Instance name:", result=self.params.get('name'))
+        progress(title="Instance name:", result=self.variables.get('name'))
         progress("Creating a new instance:")
-        param_dict = {'name': self.params.get('name'),
+        param_dict = {'name': self.variables.get('name'),
                       'image': image.id,
                       'flavor': self.params.get('flavor').id,
                       'key_name': USER,
