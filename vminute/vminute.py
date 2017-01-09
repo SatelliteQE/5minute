@@ -787,6 +787,10 @@ class BootInstanceClass(ServerClass):
                     if self.params['image'] == image:
                         self.add_variable('name', self.params['name'])
                         self.variables.update(dep_IPs)
+                        if 'flavor' in self.params:
+                            self.add_variable(
+                                'flavor',
+                                self.get_flavor(self.params.get('flavor')))
                     else:
                         self.add_variable('name', "%s-%s" % (USER, image.name))
                     self.__setup_networking()
@@ -886,15 +890,17 @@ class BootInstanceClass(ServerClass):
 
     def __choose_flavor(self, image):
         progress(title="Used  flavor:")
-        if 'flavor' not in self.params:
+        if 'flavor' not in self.variables:
             if 'default_flavor' in image.metadata:
-                self.params['flavor'] =\
-                    self.get_flavor(image.metadata.get('default_flavor'))
-            if self.params.get('flavor') is None:
-                self.params['flavor'] =\
-                    self.get_flavor(self.default_flavor)
+                self.add_variable(
+                    'flavor',
+                    self.get_flavor(image.metadata.get('default_flavor')))
+            if self.variables.get('flavor') is None:
+                self.add_variable(
+                    'flavor',
+                    self.get_flavor(self.default_flavor))
         flavor = ("{name} (RAM: {ram} MB, vCPU: {vcpus}, disk: {disk} GB)")\
-            .format(**self.params['flavor'].__dict__)
+            .format(**self.variables['flavor'].__dict__)
         progress(result=flavor)
 
     def __create_instance(self, image):
@@ -902,7 +908,7 @@ class BootInstanceClass(ServerClass):
         progress("Creating a new instance:")
         param_dict = {'name': self.variables.get('name'),
                       'image': image.id,
-                      'flavor': self.params.get('flavor').id,
+                      'flavor': self.variables['flavor'].id,
                       'key_name': USER,
                       'nics': [{'net-id': self.variables['private-net']}],
                       'meta': {'fqdn': self.variables["hostname"]},
