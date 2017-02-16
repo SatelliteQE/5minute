@@ -716,7 +716,7 @@ class BootInstanceClass(ServerClass):
                 params['help'] = True
                 return params
             elif key in ('--flavor', '-f'):
-                params['flavor'] = val #self.get_flavor(val)
+                params['flavor'] = val
             elif key in ('--console', '-c'):
                 params['console'] = True
             elif key in ('--name', '-n'):
