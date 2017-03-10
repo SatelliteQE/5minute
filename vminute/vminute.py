@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf8 -*-
 
 import getopt
@@ -15,6 +15,7 @@ import math
 import traceback
 import urllib
 from prettytable import PrettyTable
+from datetime import datetime
 import socket
 
 try:
@@ -700,6 +701,101 @@ class DeleteInstanceClass(ServerClass):
          """
 
 
+class SnapshotInstanceClass(ServerClass):
+    """
+     This is only view on the ServerClass for snapshot of instance.
+    """
+    def __parse_params(self, opts, argv):
+        params = {}
+        params['metadata'] = {}
+        for key, val in opts:
+            if key in ('--help', '-h'):
+                params['help'] = True
+                return params
+            elif key in ('--name', '-n'):
+                params['name'] = "%s" % val
+            elif key in ('--metadata', '-m'):
+                for it in val.split(';'):
+                    col, val = it.split('=')
+                    params['metadata'][col] = val
+            elif key in ('--umount', '-u'):
+                params['umount'] = True
+            else:
+                die("Bad parameter '%s'. Please try 5minute "
+                    "screenshot --help." % key)
+        if len(argv) != 1:
+            die("Name of the instance is ambiguous or empty.")
+        params['instance'] = self.get_instances(argv.pop(0))
+        return params
+
+    @catch_exception("Bad parameter. Please try 5minute snapshot help.")
+    def cmd(self, argv):
+        opts, argv = \
+            getopt.getopt(argv, "hun:m:",
+                          ['help', 'umount', 'name=', 'metadata='])
+        if 'help' not in argv:
+            self.params = self.__parse_params(opts, argv)
+        if 'help' in argv or 'help' in self.params:
+            self.help()
+            return 0
+        self.shapshot_instance()
+
+    def shapshot_instance(self):
+        server = self.params.get("instance")
+        vols = None
+        if self.params.get('umount') is not None:
+            vols = self.nova.volumes.get_server_volumes(server.id)
+            if len(vols) > 0:
+                progress(title="Release volumes:")
+                for vol in vols:
+                    progress()
+                    cvol = self.cinder.volumes.get(vol.id)
+                    self.cinder.volumes.begin_detaching(cvol)
+                progress(result="DONE")
+        name = self.params.get('name', "%s_%s" % (
+                               server.name,
+                               datetime.now().strftime("%Y-%m-%d_%X")))
+        progress(title="Create snapshot:")
+        image_id = self.nova.servers.create_image(server, name,
+                                                  self.params.get('metadata'))
+        status = self.nova.images.get(image_id).status
+        while status in ['SAVING', ]:
+            time.sleep(1)
+            progress()
+            status = self.nova.images.get(image_id).status
+        if status == 'ACTIVE':
+            progress(result="DONE")
+        else:
+            progress(result="FAIL")
+
+    def help(self):
+        print """
+         Usage: 5minute snapshot [PARAM] <NAME|ID>
+         Delete instance.
+
+         PARAM:
+             -n, --name      name of the snapshoot
+             -u, --umount    umount all volumes
+             <NAME|ID>   Name or ID of instance
+
+         Examples:
+             5minute snapshot  user-5minute-RHEL6
+
+         If you want to create new 5minute image (universal template), please
+         clean the instance.
+
+         Ex. for RHEL6:
+          rm -rf /etc/ssh/ssh_host_*
+          rm -rf /etc/sysconfig/rhn/systemid
+          sed -i '/HWADDR=*/d' /etc/sysconfig/network-scripts/ifcfg-*
+          sed -i -e '/net/d' -e '/virtio-pci)/d' /etc/udev/rules.d/70-persistent-net.rules
+          [ -e /etc/redhat-ddns/hosts ] && echo "" > /etc/redhat-ddns/hosts
+          echo "" > ~/.bash_history
+          echo "" > /etc/motd
+
+         """
+
+
 class BootInstanceClass(ServerClass):
     """
      This is only view on the ServerClass for booting of instance.
@@ -1267,6 +1363,8 @@ def main(argv):
         DeleteInstanceClass().cmd(argv)
     elif cmd == 'boot':
         BootInstanceClass().cmd(argv)
+    elif cmd == 'snapshot':
+        SnapshotInstanceClass().cmd(argv)
     elif cmd in ('scenario', 'scenarios'):
         scmd = None
         if len(argv) > 0:
