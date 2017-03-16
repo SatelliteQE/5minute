@@ -496,7 +496,7 @@ class ServerClass(BaseClass):
     @catch_exception("Name of the volume is ambiguous, please use ID.", cinder_exceptions.NoUniqueMatch)
     def get_volume(self, id):
         if re.match(r'^[0-9a-f\-]+$', id) is None:
-            return self.cinder.volumes.find(name=id)
+            return self.cinder.volumes.find(display_name=id)
         else:
             return self.cinder.volumes.get(id)
 
@@ -628,16 +628,33 @@ class DeleteInstanceClass(ServerClass):
     """
      This is only view on the ServerClass for deletting of instance.
     """
-    def cmd(self, argv):
-        if len(argv) == 0:
-            die("Missing a parameter. Please try 5minute delete <name|id>.")
-        else:
-            if argv[0] in ('help', '--help', '-h'):
-                self.help()
-                return 0
+
+    def __parse_params(self, opts, argv):
+        params = {}
+        for key, val in opts:
+            if key in ('--help', '-h'):
+                params['help'] = True
+                return params
+            elif key in ('--skip-volume', '-s'):
+                params['skip-volume'] = True
             else:
-                for it in argv:
-                    self.kill_instances(it)
+                die("Bad parameter '%s'. Please try 5minute "
+                    "kill --help." % key)
+        if len(argv) < 1:
+            die("Missing name or ID of the instance.")
+        return params
+
+    @catch_exception("Bad parameter. Please try 5minute kill help.")
+    def cmd(self, argv):
+        opts, argv = \
+            getopt.getopt(argv, "hs", ['help', 'skip-volume'])
+        if 'help' not in argv:
+            self.params = self.__parse_params(opts, argv)
+        if 'help' in argv or 'help' in self.params:
+            self.help()
+            return 0
+        for it in argv:
+            self.kill_instances(it)
 
 #    @catch_exception("The problem deleting of the instances.")
     def kill_instances(self, id):
@@ -655,6 +672,7 @@ class DeleteInstanceClass(ServerClass):
                 progress()
                 cvol = self.cinder.volumes.get(vol.id)
                 self.cinder.volumes.begin_detaching(cvol)
+                self.cinder.volumes.detach(cvol)
             progress(result="DONE")
         progress(title="Delete instance:")
         done = False
@@ -675,24 +693,26 @@ class DeleteInstanceClass(ServerClass):
                 self.nova.floating_ips.delete(fip.id)
             else:
                 server.add_floating_ip(fip.ip)
-        for vol in vols:
-            cvol = self.cinder.volumes.get(vol.id)
-            if done:
-                progress(title="Delete volume:")
-                cvol.delete()
-                while len(self.cinder.volumes.findall(id=cvol.id)) > 0:
-                    time.sleep(1)
-                    progress()
-                progress(result="DONE")
-            else:
-                self.cinder.volumes.roll_detaching(cvol)
+        if 'skip-volume' not in self.params:
+            for vol in vols:
+                cvol = self.cinder.volumes.get(vol.id)
+                if done:
+                    progress(title="Delete volume:")
+                    cvol.delete()
+                    while len(self.cinder.volumes.findall(id=cvol.id)) > 0:
+                        time.sleep(1)
+                        progress()
+                    progress(result="DONE")
+                else:
+                    self.cinder.volumes.roll_detaching(cvol)
 
     def help(self):
         print """
-         Usage: 5minute (del|kill|delete) <NAME|ID>
+         Usage: 5minute (del|kill|delete) [PARAM] <NAME|ID>
          Delete instance.
 
          PARAM:
+             --skip-volume  - skip deleting of the volume
              <NAME|ID>   Name or ID of instance
 
          Examples:
@@ -751,6 +771,7 @@ class SnapshotInstanceClass(ServerClass):
                     progress()
                     cvol = self.cinder.volumes.get(vol.id)
                     self.cinder.volumes.begin_detaching(cvol)
+                    self.cinder.volumes.detach(cvol)
                 progress(result="DONE")
         name = self.params.get('name', "%s_%s" % (
                                server.name,
@@ -765,6 +786,10 @@ class SnapshotInstanceClass(ServerClass):
             status = self.nova.images.get(image_id).status
         if status == 'ACTIVE':
             progress(result="DONE")
+            progress(title="Snapshot ID:")
+            progress(result=image_id)
+            progress(title="Snapshot Name:")
+            progress(result=self.nova.images.get(image_id).name)
         else:
             progress(result="FAIL")
 
@@ -776,6 +801,7 @@ class SnapshotInstanceClass(ServerClass):
          PARAM:
              -n, --name      name of the snapshoot
              -u, --umount    umount all volumes
+             -m, --metadata  metadata for image. pair key=val separated by semicolon
              <NAME|ID>   Name or ID of instance
 
          Examples:
@@ -954,9 +980,8 @@ class BootInstanceClass(ServerClass):
     def __setup_volume(self, image):
         self.volume = None
         if not self.params.get('novolume', False):
-            volume_name = self.params.get('volume')
-            if volume_name is None:
-                volume_name = image.metadata.get('volumes')
+            volume_name = self.params.get('volume',
+                                          image.metadata.get('volumes'))
             if volume_name:
                 # Is the volume_name name/id of existing volume?
                 try:
@@ -967,6 +992,9 @@ class BootInstanceClass(ServerClass):
                     # The volume_name is name of snapshot,
                     # we create new volume from it
                     self.volume = self.__create_new_volume(volume_name, image)
+                else:
+                    progress(title="Volume:")
+                    progress(result=volume_name)
 
     def __create_new_volume(self, volume_name, image):
         progress(title="Creating a new volume:")
