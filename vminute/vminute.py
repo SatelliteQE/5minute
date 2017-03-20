@@ -830,6 +830,7 @@ class BootInstanceClass(ServerClass):
     default_flavor = "m1.medium"
     variables = None
     created_volume = False
+    cinit_ending_text = "===============_CLOUD_INIT_FINISHED_==============="
 
     def __parse_params(self, opts, argv):
         params = {}
@@ -970,11 +971,14 @@ class BootInstanceClass(ServerClass):
             filenames = image.metadata['cscripts']
         if filenames:
             progress(title='Loading the userdata script:')
-            self.params['cscript'] = ""
+            self.params['cscript'] = "#!/bin/bash\n"
             for filename in filenames.split():
                 cscript = urllib.urlopen(filename).read()
+                cscript = re.sub(r'^#!/bin/bash', '', cscript, flags=re.M)
                 self.params['cscript'] += cscript.format(**self.variables)
                 self.params['cscript'] += "\n"
+            self.params['cscript'] += 'echo "\n%s" > /dev/ttyS0;' %\
+                self.cinit_ending_text
             progress(result="DONE")
 
     def __setup_volume(self, image):
@@ -1064,40 +1068,54 @@ class BootInstanceClass(ServerClass):
         exit_status = None
         exit_message = "DONE"
         counter = 60
-        reg_login = re.compile(r".*login:\s*$")
-        reg_warning = re.compile(r"(warning)", re.I)
-        reg_error = re.compile(r"(error)", re.I)
+        isatty = sys.stderr.isatty()
+        reg_exit = re.compile(r".*login:\s*$")
+        if len(self.params['cscript']) > 0:
+            reg_exit = re.compile(self.cinit_ending_text)
         if show_output:
             print "Booting of the instance:"
         else:
             progress(title="Booting of the instance:")
-        output = server.get_console_output().splitlines()
+        output = server.get_console_output()
+        # cut off incomplete row
+        # output = output[0:output.rfind("\n")]
+        length_old = 0
         while counter > 0 and exit_status is None:
-            nindex = len(output) - 1
-            if lindex >= nindex:
+            length = len(output)
+            if length_old > length:
+                # WA: sometime old_length is bigger then current length
+                length_old = length - 1000
+            if length == length_old:
                 counter -= 1
+                time.sleep(1)
+                if not show_output:
+                    progress()
             else:
                 counter = 60
-                for line in output[lindex:]:
-                    patern = "%s\n"
-                    if reg_login.match(line):
+                # we can work only with new lines
+                output = output[-1*(length - length_old):]
+                length_old = length
+                if re.search(r'(.*error.*)', output, flags=re.I & re.M):
+                    exit_message = "Errors in the userdata script"
+                if show_output:
+                    if isatty:
+                        output = re.sub(r'(\[32m|\[0m)', r'\033\1', output,
+                                        flags=re.M)
+                        output = re.sub(r'(.*warning.*)',
+                                        r"\033[92;01m\1\033[39;49;00m",
+                                        output, flags=re.I & re.M)
+                        output = re.sub(r'(.*error.*)',
+                                        r"\033[31;01m\1\033[39;49;00m",
+                                        output, flags=re.I & re.M)
+                    sys.stdout.write("%s\n" % output)
+                else:
+                    progress()
+                if reg_exit.search(output):
                         counter = 0
                         if exit_status is None:
                             exit_status = True
                         break
-                    if reg_warning.search(line):
-                        patern = "\x1b[92;01m%s\x1b[39;49;00m\n"
-                    if reg_error.search(line):
-                        patern = "\x1b[31;01m%s\x1b[39;49;00m\n"
-                        exit_message = "Errors in the userdata script"
-                    if show_output:
-                        sys.stdout.write(patern % line)
-                    else:
-                        progress()
-                    time.sleep(1)
-                lindex = nindex + 1
-            if exit_status is None:
-                output = server.get_console_output(30).splitlines()
+            output = server.get_console_output()
         if not show_output:
             progress(result=exit_message)
         if exit_status is None:
