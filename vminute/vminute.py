@@ -399,7 +399,7 @@ class KeyClass(BaseClass):
 
 
 class ImagesClass(BaseClass):
-    __filter = "5minute-"
+    __filter = r"^(5minute-|%s-)" % USER
 
     @catch_exception("Problem getting the list of images.")
     def __images(self):
