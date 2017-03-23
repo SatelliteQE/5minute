@@ -740,6 +740,8 @@ class SnapshotInstanceClass(ServerClass):
                     params['metadata'][col] = val
             elif key in ('--umount', '-u'):
                 params['umount'] = True
+            elif key in ('--shutdown', '-s'):
+                params['shutdown'] = True
             else:
                 die("Bad parameter '%s'. Please try 5minute "
                     "screenshot --help." % key)
@@ -751,8 +753,8 @@ class SnapshotInstanceClass(ServerClass):
     @catch_exception("Bad parameter. Please try 5minute snapshot help.")
     def cmd(self, argv):
         opts, argv = \
-            getopt.getopt(argv, "hun:m:",
-                          ['help', 'umount', 'name=', 'metadata='])
+            getopt.getopt(argv, "husn:m:",
+                          ['help', 'umount', 'name=', 'metadata=', 'shutdown'])
         if 'help' not in argv:
             self.params = self.__parse_params(opts, argv)
         if 'help' in argv or 'help' in self.params:
@@ -772,6 +774,15 @@ class SnapshotInstanceClass(ServerClass):
                     cvol = self.cinder.volumes.get(vol.id)
                     self.cinder.volumes.begin_detaching(cvol)
                     self.cinder.volumes.detach(cvol)
+                progress(result="DONE")
+        if self.params.get('shutdown') is not None:
+                progress(title="Shutdowning of instance:")
+                server.stop()
+                status = server.status
+                while status != 'SHUTOFF':
+                    time.sleep(1)
+                    progress()
+                    status = self.nova.servers.get(server.id).status
                 progress(result="DONE")
         name = self.params.get('name', "%s_%s" % (
                                server.name,
@@ -801,6 +812,7 @@ class SnapshotInstanceClass(ServerClass):
          PARAM:
              -n, --name      name of the snapshoot
              -u, --umount    umount all volumes
+             -s, --shutdown  shutdown of the instance before snapshot
              -m, --metadata  metadata for image. pair key=val separated by semicolon
              <NAME|ID>   Name or ID of instance
 
