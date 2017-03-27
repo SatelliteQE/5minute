@@ -3,3 +3,5 @@ python-heatclient
 python-neutronclient
 python-xmltodict
 python-prettytable
+python-novaclient
+python-keystoneclient
