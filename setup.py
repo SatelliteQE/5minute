@@ -51,7 +51,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            '5minute=vminute:main_main'
+            '5minute=vminute.vminute.main'
         ]
     }
 )
