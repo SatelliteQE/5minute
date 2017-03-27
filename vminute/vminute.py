@@ -62,14 +62,20 @@ def die(message, excode=1, exception=None):
     """
     global PROGRESS
     if PROGRESS is not None:
-        progress(result="\x1b[31;01mFAIL\x1b[39;49;00m")
+        if sys.stderr.isatty():
+            progress(result="\x1b[31;01mFAIL\x1b[39;49;00m")
+        else:
+            progress(result="FAIL")
     global DEBUG
     if exception and DEBUG:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         sys.stderr.write("\n\x1b[92;01m")
         traceback.print_tb(exc_traceback)
         sys.stderr.write("\x1b[39;49;00m\n")
-    sys.stderr.write("\n\x1b[31;01m%s\x1b[39;49;00m\n\n" % message)
+    if sys.stderr.isatty():
+        sys.stderr.write("\n\x1b[31;01m%s\x1b[39;49;00m\n\n" % message)
+    else:
+        sys.stderr.write("\n%s\n\n" % message)
     sys.exit(excode)
 
 
@@ -80,7 +86,10 @@ def warning(message, answer=None):
     :param answer: list of supported options. Default is first item.
     """
     c = ""
-    sys.stderr.write("\n\x1b[92;01m%s " % message)
+    if sys.stderr.isatty():
+        sys.stderr.write("\n\x1b[92;01m%s " % message)
+    else:
+        sys.stderr.write("\n%s " % message)
     if answer:
         fd = sys.stdin.fileno()
         oldterm = termios.tcgetattr(fd)
@@ -100,7 +109,10 @@ def warning(message, answer=None):
             termios.tcsetattr(fd, termios.TCSAFLUSH, oldterm)
             fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
         c = (u"%s" % c).lower()
-    sys.stderr.write(" %s\x1b[39;49;00m\n\n" % c)
+    if sys.stderr.isatty():
+        sys.stderr.write(" %s\x1b[39;49;00m\n\n" % c)
+    else:
+        sys.stderr.write(" %s\n\n" % c)
     if answer:
         for it in answer:
             if c in it:
@@ -125,8 +137,12 @@ def progress(title=None, result=None):
         PROGRESS = 0
         sys.stdout.write("%s" % title.ljust(40, " "))
     if result:
-        sys.stdout.write("%s\x1b[92;01m%s\x1b[39;49;00m\n" %
-                         ("\b" * (PROGRESS % 20), result.ljust(20, " ")))
+        if sys.stderr.isatty():
+            sys.stdout.write("%s\x1b[92;01m%s\x1b[39;49;00m\n" %
+                             ("\b" * (PROGRESS % 20), result.ljust(20, " ")))
+        else:
+            sys.stdout.write("%s%s\n" %
+                             ("\b" * (PROGRESS % 20), result.ljust(20, " ")))
         PROGRESS = None
     if title is None and result is None:
         PROGRESS += 1
