@@ -686,9 +686,9 @@ class DeleteInstanceClass(ServerClass):
             progress(title="Release volumes:")
             for vol in vols:
                 progress()
-                cvol = self.cinder.volumes.get(vol.id)
-                self.cinder.volumes.begin_detaching(cvol)
-                self.cinder.volumes.detach(cvol)
+                self.cinder.volumes.get(vol.id).detach()
+                # self.cinder.volumes.begin_detaching(cvol)
+                # self.cinder.volumes.detach(cvol)
             progress(result="DONE")
         progress(title="Delete instance:")
         done = False
@@ -787,9 +787,9 @@ class SnapshotInstanceClass(ServerClass):
                 progress(title="Release volumes:")
                 for vol in vols:
                     progress()
-                    cvol = self.cinder.volumes.get(vol.id)
-                    self.cinder.volumes.begin_detaching(cvol)
-                    self.cinder.volumes.detach(cvol)
+                    self.cinder.volumes.get(vol.id).detach()
+                    # self.cinder.volumes.begin_detaching(cvol)
+                    # self.cinder.volumes.detach(cvol)
                 progress(result="DONE")
         if self.params.get('shutdown') is not None:
                 progress(title="Shutdowning of instance:")
