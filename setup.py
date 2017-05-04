@@ -1,4 +1,6 @@
 
+from pip.req import parse_requirements
+from pip.download import PipSession
 from setuptools import setup, find_packages
 # To use a consistent encoding
 from codecs import open
@@ -9,6 +11,9 @@ here = path.abspath(path.dirname(__file__))
 
 with open(path.join(here, 'README'), encoding='utf-8') as f:
     long_description = f.read()
+
+install_reqs = parse_requirements("requirements.txt", session=PipSession())
+reqs = [str(ir.req) for ir in install_reqs]
 
 
 def get_version():
@@ -38,13 +43,7 @@ setup(
         'License :: OSI Approved :: GNU General Public License v2 (GPLv2)',
     ],
     keywords='openstack testing deployment',
-    install_requires=['python-keystoneclient',
-                      'python-cinderclient',
-                      'python-heatclient',
-                      'python-neutronclient',
-                      'python-novaclient',
-                      'xmltodict',
-                      'prettytable'],
+    install_requires=reqs,
     packages=find_packages(),
     package_data={
         'vminute': ['scenarios/README']
