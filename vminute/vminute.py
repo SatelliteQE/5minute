@@ -369,6 +369,7 @@ class BaseClass(object):
                 list        - the list of instances
                 delete      - delete a quest
                 boot        - create a new quest
+                snapshot    - create s snapshot of the instance
                 scenario    - working with scenarios
 
             Examples:
@@ -385,6 +386,7 @@ class BaseClass(object):
                 5minute boot --help
                 5minute boot 5minute-RHEL6
                 5minute boot --name myRHEL6 5minute-RHEL6
+                5minute snapshot --help
                 5minute scenarios --help
         """
 
@@ -841,6 +843,7 @@ class SnapshotInstanceClass(ServerClass):
          Ex. for RHEL6:
           rm -rf /etc/ssh/ssh_host_*
           rm -rf /etc/sysconfig/rhn/systemid
+          subscription-manager unregister
           sed -i '/HWADDR=*/d' /etc/sysconfig/network-scripts/ifcfg-*
           sed -i -e '/net/d' -e '/virtio-pci)/d' /etc/udev/rules.d/70-persistent-net.rules
           [ -e /etc/redhat-ddns/hosts ] && echo "" > /etc/redhat-ddns/hosts
