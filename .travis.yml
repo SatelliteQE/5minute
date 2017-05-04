@@ -19,7 +19,8 @@ deploy:
   password:
     secure: "YoUVrooz8gKCc+gmrbckyCrJVpcryYkRvnLTCK9tjGjdIGNrC7DtJcNkgtweD5HuZ4VGD9K9RJN9koMukV6LAIMNwQvscZQyUz79LSivCFHL3766Pp/P7TX7JeNybHvDcdZKw1vyI/5nzYeY2y9KOvyuIsAi3sTTQukyGMLA6yXYDaMWhPzPVyM/llFZkFdCyKpu3syLj+vfRgOYk+jlUXamsOh+jMy/L21tf3LGWNX0Fon/taUPAF7r294MuK3+MGIrzxjrV+H3L8DcKsOulDBRgijZpUylDAJyqKFYGHJBACldgqJinL7OUxMpqKCwTDmStYCwil2VSxY3ot1xE+lDmTVbfPG3G/zo4owjn3hVJ4xMva2iNb5RU+SDC/pJdg2r7VfdfcU1Zpo1g12s1J+UyCJLIXHy7fEikSO8eMX1F+EqIeabbWqJfqb5KQZ4xLo+EtMM0NWpsAuYozrdyiP9X+niRv/QhYGkaDBvvMQPIosR+utKHYDDZ8dWgYsOgxqOquyO4bSGfLhNtuGZQ4h3FhkhjwjLXAjHxLSfdUzpJ4+Zkf1PqKIWA2WUeKHUxG7UZM4gnu3qoBU1ihDJitLxv3UpRO+e1CAWD33Br2Y/cdcvZnkD9E7QhqiVR/STVzhLdPM/NiZMv4J+ucqn7OyWo/cvYUrDbmR/FDaEZZg="
   on:
-    all_branches: true
-    tags: true
     condition: $TRAVIS_PYTHON_VERSION = 2.7
+    branches:
+        only:
+        - /v\d+\.\d+\.\d+[a-z]*/
 
