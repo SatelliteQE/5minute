@@ -758,6 +758,8 @@ class SnapshotInstanceClass(ServerClass):
                     params['metadata'][col] = val
             elif key in ('--umount', '-u'):
                 params['umount'] = True
+            elif key in ('--volume'):
+                params['volume'] = True
             elif key in ('--shutdown', '-s'):
                 params['shutdown'] = True
             else:
@@ -772,7 +774,7 @@ class SnapshotInstanceClass(ServerClass):
     def cmd(self, argv):
         opts, argv = \
             getopt.getopt(argv, "husn:m:",
-                          ['help', 'umount', 'name=', 'metadata=', 'shutdown'])
+                          ['help', 'volume', 'umount', 'name=', 'metadata=', 'shutdown'])
         if 'help' not in argv:
             self.params = self.__parse_params(opts, argv)
         if 'help' in argv or 'help' in self.params:
@@ -794,17 +796,36 @@ class SnapshotInstanceClass(ServerClass):
                     # self.cinder.volumes.detach(cvol)
                 progress(result="DONE")
         if self.params.get('shutdown') is not None:
-                progress(title="Shutdowning of instance:")
+            progress(title="Shutdowning of instance:")
+            if server.status != 'SHUTOFF':
                 server.stop()
                 status = server.status
                 while status != 'SHUTOFF':
                     time.sleep(1)
                     progress()
                     status = self.nova.servers.get(server.id).status
-                progress(result="DONE")
+            progress(result="DONE")
         name = self.params.get('name', "%s_%s" % (
                                server.name,
                                datetime.now().strftime("%Y-%m-%d_%X")))
+        if self.params.get('volume') is not None and vols is not None:
+            progress(title="Snapshoting of volume:")
+            for vol in vols:
+                progress()
+                snap = self.cinder.volume_snapshots.create(vol.id,
+                                                           display_name=name)
+                while snap.status in ['creating', ]:
+                    time.sleep(1)
+                    progress()
+                    snap = self.cinder.volume_snapshots.get(snap.id)
+                if snap.status == 'available':
+                    progress(result="DONE")
+                    progress(title="Vol. snapshot ID:")
+                    progress(result=snap.id)
+                    self.params['metadata']['voluemes'] = snap.id
+                else:
+                    progress(result="FAIL")
+
         progress(title="Create snapshot:")
         image_id = self.nova.servers.create_image(server, name,
                                                   self.params.get('metadata'))
@@ -828,8 +849,9 @@ class SnapshotInstanceClass(ServerClass):
          Delete instance.
 
          PARAM:
-             -n, --name      name of the snapshoot
+             -n, --name      name of the snapshot
              -u, --umount    umount all volumes
+             --volume        create a snapshot of the volume and assign it to the snapshot of the instance
              -s, --shutdown  shutdown of the instance before snapshot
              -m, --metadata  metadata for image. pair key=val separated by semicolon
              <NAME|ID>   Name or ID of instance
