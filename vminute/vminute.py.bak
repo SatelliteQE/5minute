@@ -398,7 +398,7 @@ class KeyClass(BaseClass):
             die("SSL key '%s' is not readable." % key)
         with open(key) as fd:
             self.nova.keypairs.create(USER, fd.read())
-            print(("The key %s was uploaded successfully." % key))
+            print("The key %s was uploaded successfully." % key)
 
     def cmd(self, argv):
         if len(argv) == 0 or argv[0] in ('help', '--help', '-h'):
@@ -429,7 +429,7 @@ class ImagesClass(BaseClass):
             if rx.search(img.name):
                 row = [img.name, img.id, img.status]
                 x.add_row(row)
-        print((x.get_string(sortby="Name")))
+        print(x.get_string(sortby="Name"))
 
     def cmd(self, argv):
         if len(argv) > 0:
@@ -623,7 +623,7 @@ class ListInstancesClass(ServerClass):
         for ins in instances:
             row = [ins.name, ins.id, ins.status, ins.metadata.get('fqdn', "")]
             x.add_row(row)
-        print((x.get_string(sortby="Name")))
+        print(x.get_string(sortby="Name"))
 
     def help(self):
         print("""
@@ -1244,7 +1244,7 @@ class TemplateScenarioClass(ScenarioClass):
             for row in self.__get_list_templates():
                 print(row)
                 x.add_row([row, ])
-            print((x.get_string(sortby="Name")))
+            print(x.get_string(sortby="Name"))
 
     def help(self):
         print("""
@@ -1314,7 +1314,7 @@ class BootScenarioClass(ScenarioClass):
         if stack['stack_status'] == 'CREATION_COMPLETE':
             progress(result="DONE")
             for it in stack['outputs']:
-                print(("{key}: {val}".format(key=it['output_key'], val=it['output_value'])))
+                print("{key}: {val}".format(key=it['output_key'], val=it['output_value']))
             print("Stack succesfully created.")
         else:
             progress(result="FAIL")
@@ -1379,7 +1379,7 @@ class ListScenarioClass(ScenarioClass):
         for ins in scenarios:
             row = [ins.stack_name, ins.id, ins.stack_status, ins.description.split("\n", 1)[0][0:20]]
             x.add_row(row)
-        print((x.get_string(sortby="Name")))
+        print(x.get_string(sortby="Name"))
 
     def help(self):
         print("""
