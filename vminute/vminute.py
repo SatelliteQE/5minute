@@ -822,7 +822,7 @@ class SnapshotInstanceClass(ServerClass):
                     progress(result="DONE")
                     progress(title="Vol. snapshot ID:")
                     progress(result=snap.id)
-                    self.params['metadata']['voluemes'] = snap.id
+                    self.params['metadata']['volumes'] = snap.id
                 else:
                     progress(result="FAIL")
 
