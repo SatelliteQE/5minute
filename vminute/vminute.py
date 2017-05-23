@@ -762,25 +762,59 @@ class SnapshotInstanceClass(ServerClass):
                 params['volume'] = True
             elif key in ('--shutdown', '-s'):
                 params['shutdown'] = True
+            elif key in ('--delete'):
+                params['delete'] = True
             else:
                 die("Bad parameter '%s'. Please try 5minute "
                     "screenshot --help." % key)
-        if len(argv) != 1:
-            die("Name of the instance is ambiguous or empty.")
-        params['instance'] = self.get_instances(argv.pop(0))
+        if 'delete' in params:
+            if len(argv) != 1:
+                die("Name of the snapshot is ambiguous or empty.")
+            params['snapshot'] = self.get_image(argv.pop(0))
+        else:
+            if len(argv) != 1:
+                die("Name of the instance is ambiguous or empty.")
+            params['instance'] = self.get_instances(argv.pop(0))
         return params
 
     @catch_exception("Bad parameter. Please try 5minute snapshot help.")
     def cmd(self, argv):
         opts, argv = \
             getopt.getopt(argv, "husn:m:",
-                          ['help', 'volume', 'umount', 'name=', 'metadata=', 'shutdown'])
+                          ['help', 'volume', 'umount', 'name=', 'metadata=',
+                           'shutdown', 'delete'])
         if 'help' not in argv:
             self.params = self.__parse_params(opts, argv)
         if 'help' in argv or 'help' in self.params:
             self.help()
             return 0
-        self.shapshot_instance()
+        if self.params.get('delete'):
+            self.delete_snapshot()
+        else:
+            self.shapshot_instance()
+
+    def delete_snapshot(self):
+        snapshot = self.params.get("snapshot")
+        svols = snapshot.metadata.get('volumes', "").split()
+        progress(title="Delete snapshot:")
+        snapshot.delete()
+        while len(self.nova.images.findall(id=snapshot.id)) > 0:
+            time.sleep(1)
+            progress()
+        progress(result="DONE")
+        if self.params.get("volume"):
+            for it in svols:
+                try:
+                    progress(title="Delete volume snapshot:")
+                    svol = self.get_snapshot(it)
+                    svol.delete()
+                    while len(self.nova
+                                  .volume_snapshots.findall(id=svol.id)) > 0:
+                        time.sleep(1)
+                        progress()
+                    progress(result="DONE")
+                except:
+                    progress(result="FAIL")
 
     def shapshot_instance(self):
         server = self.params.get("instance")
@@ -850,14 +884,16 @@ class SnapshotInstanceClass(ServerClass):
 
          PARAM:
              -n, --name      name of the snapshot
+             --delete        delete snapshot (with / without snapshot of the volume)
              -u, --umount    umount all volumes
-             --volume        create a snapshot of the volume and assign it to the snapshot of the instance
+             --volume        create/delete a snapshot of the volume and assign it to the snapshot of the instance
              -s, --shutdown  shutdown of the instance before snapshot
              -m, --metadata  metadata for image. pair key=val separated by semicolon
-             <NAME|ID>   Name or ID of instance
+             <NAME|ID>   Name or ID of instance / snapshot (deleting)
 
          Examples:
              5minute snapshot  user-5minute-RHEL6
+             5minute snapshot --delete --volume  5minute-RHEL6_20170520
 
          If you want to create new 5minute image (universal template), please
          clean the instance.
