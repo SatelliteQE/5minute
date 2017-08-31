@@ -2,7 +2,7 @@
 
 from .vminute import main
 import sys
-__version__ = "v0.2.15"
+__version__ = "0.2.18"
 
 
 def main_main():
