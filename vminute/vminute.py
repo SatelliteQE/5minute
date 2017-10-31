@@ -8,12 +8,13 @@ import re
 import termios
 import fcntl
 import subprocess
-import urllib.request, urllib.error, urllib.parse
+import urllib.request
+import urllib.error
+import urllib.parse
 import random
 import time
 import math
 import traceback
-import urllib.request, urllib.parse, urllib.error
 from prettytable import PrettyTable
 from datetime import datetime
 import socket
