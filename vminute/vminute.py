@@ -14,9 +14,9 @@ from datetime import datetime
 import socket
 
 try:
-    from urllib import request
+    from urllib import urlopen
 except ImportError:
-    from urllib3 import request
+    from urllib.request import urlopen
 
 try:
     from keystoneclient.v2_0 import client as keystone_client
@@ -344,7 +344,7 @@ class BaseClass(object):
     def __get_scenario(self, filename):
         xml = None
         try:
-            xml = request.urlopen('https://example.com/scenarios/%s' % filename).read()
+            xml = urlopen('https://example.com/scenarios/%s' % filename).read()
         except:
             warning("Profile '%s' doesn't exist." % filename)
             return dict()
@@ -1062,7 +1062,7 @@ class BootInstanceClass(ServerClass):
             progress(title='Loading the userdata script:')
             self.params['cscript'] = "#!/bin/bash\n"
             for filename in filenames.split():
-                cscript = request.urlopen(filename).read()
+                cscript = urlopen(filename).read()
                 cscript = re.sub(r'^#!/bin/bash', '', cscript, flags=re.M)
                 self.params['cscript'] += cscript.format(**self.variables)
                 self.params['cscript'] += "\n"
