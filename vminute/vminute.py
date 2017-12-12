@@ -938,7 +938,7 @@ class BootInstanceClass(ServerClass):
             elif key in ('--console', '-c'):
                 params['console'] = True
             elif key in ('--name', '-n'):
-                params['name'] = "%s-%s" % (USER, val)
+                params['name'] = val
             elif key in ('--volume', '-v'):
                 params['volume'] = val
             elif key in ('--profile', '-p'):
