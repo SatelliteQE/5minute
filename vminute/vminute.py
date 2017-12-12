@@ -20,6 +20,11 @@ from datetime import datetime
 import socket
 
 try:
+    from urllib import urlopen
+except ImportError:
+    from urllib.request import urlopen
+
+try:
     from keystoneclient.v2_0 import client as keystone_client
     from cinderclient import client as cinder_client
     from cinderclient import exceptions as cinder_exceptions
@@ -345,7 +350,7 @@ class BaseClass(object):
     def __get_scenario(self, filename):
         xml = None
         try:
-            xml = urllib.request.urlopen('https://example.com/scenarios/%s' % filename).read()
+            xml = urlopen('https://example.com/scenarios/%s' % filename).read()
         except:
             warning("Profile '%s' doesn't exist." % filename)
             return dict()
@@ -1506,6 +1511,3 @@ def main(argv):
         if len(argv) > 0:
             scmd = argv.pop(0)
         ScenarioClass.getInstance(scmd).cmd(argv)
-
-if __name__ == "__main__":
-    main(sys.argv[1:])
