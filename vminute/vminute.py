@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: utf8 -*-
+
 import getopt
 import os
 import sys
@@ -5,6 +8,9 @@ import re
 import termios
 import fcntl
 import subprocess
+import urllib.request
+import urllib.error
+import urllib.parse
 import random
 import time
 import math
@@ -31,7 +37,7 @@ try:
     from keystoneclient import session as keystoneSession
     import xmltodict
 except ImportError as ie:
-    sys.stderr.write(ie.message + "\n")
+    sys.stderr.write(str(ie) + "\n")
     sys.exit(1)
 
 try:
@@ -164,7 +170,7 @@ def catch_exception(text=None, type=Exception):
             except type as ex:
                 if not DISABLE_CATCH:
                     if catch_message is None:
-                        catch_message = ex.message
+                        catch_message = str(ex)
                     die(catch_message, exception=ex)
                 else:
                     raise ex
@@ -702,7 +708,7 @@ class DeleteInstanceClass(ServerClass):
                 progress()
             progress(result="DONE")
         except Exception as e:
-            if 'locked' in e.message:
+            if 'locked' in str(e):
                 progress(result="\x1b[31;01mLOCKED\x1b[39;49;00m")
             else:
                 progress(result="FAIL")
@@ -1062,7 +1068,7 @@ class BootInstanceClass(ServerClass):
             progress(title='Loading the userdata script:')
             self.params['cscript'] = "#!/bin/bash\n"
             for filename in filenames.split():
-                cscript = urlopen(filename).read()
+                cscript = urllib.request.urlopen(filename).read().decode('utf-8')
                 cscript = re.sub(r'^#!/bin/bash', '', cscript, flags=re.M)
                 self.params['cscript'] += cscript.format(**self.variables)
                 self.params['cscript'] += "\n"

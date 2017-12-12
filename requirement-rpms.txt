@@ -1,7 +1,7 @@
-python-cinderclient
-python-heatclient
-python-neutronclient
-python-xmltodict
-python-prettytable
-python-novaclient
-python-keystoneclient
+python3-cinderclient
+python3-heatclient
+python3-neutronclient
+python3-xmltodict
+python3-prettytable
+python3-novaclient
+python3-keystoneclient
