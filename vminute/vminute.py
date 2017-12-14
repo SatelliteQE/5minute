@@ -761,7 +761,7 @@ class SnapshotInstanceClass(ServerClass):
             elif key in ('--metadata', '-m'):
                 for it in val.split(';'):
                     col, val = it.split('=')
-                    params['metadata'][col] = val
+                    params['metadata'][col] = val.replace(',', ' ')
             elif key in ('--umount', '-u'):
                 params['umount'] = True
             elif key in ('--volume'):
@@ -964,8 +964,8 @@ class BootInstanceClass(ServerClass):
     def cmd(self, argv):
         opts, argv = \
             getopt.getopt(argv, "hcf:n:v:p:",
-                          ['help', 'console', 'flavor=', 'name=', 'volume=', 'userdata=',
-                           'novolume', 'noip'])
+                          ['help', 'console', 'flavor=', 'name=', 'volume=',
+                           'userdata=', 'novolume', 'noip'])
         self.params = self.__parse_params(opts, argv)
         if 'help' in self.params:
             self.help()
@@ -1067,7 +1067,8 @@ class BootInstanceClass(ServerClass):
         if filenames:
             progress(title='Loading the userdata script:')
             self.params['cscript'] = "#!/bin/bash\n"
-            for filename in filenames.split():
+            for filename in filenames.replace(',', ' ').split():
+                print(filename)
                 cscript = urllib.request.urlopen(filename).read().decode('utf-8')
                 cscript = re.sub(r'^#!/bin/bash', '', cscript, flags=re.M)
                 self.params['cscript'] += cscript.format(**self.variables)
