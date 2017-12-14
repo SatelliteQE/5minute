@@ -1068,7 +1068,6 @@ class BootInstanceClass(ServerClass):
             progress(title='Loading the userdata script:')
             self.params['cscript'] = "#!/bin/bash\n"
             for filename in filenames.replace(',', ' ').split():
-                print(filename)
                 cscript = urllib.request.urlopen(filename).read().decode('utf-8')
                 cscript = re.sub(r'^#!/bin/bash', '', cscript, flags=re.M)
                 self.params['cscript'] += cscript.format(**self.variables)
