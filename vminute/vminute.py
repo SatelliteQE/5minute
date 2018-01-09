@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# -*- coding: utf8 -*-
+# -*- coding: utf-8 -*-
 
 import getopt
 import os
@@ -260,15 +260,6 @@ class BaseClass(object):
     def _check_key(self):
         self.nova.keypairs.get(USER)
 
-    @catch_exception("Problem connecting to the OpenStack sever. Please, check the configuration file "
-                     "~/.5minute/config. (maybe OS_PASSWORD is not an explicit value or is not set up in env)")
-    def __check_connection(self):
-        try:
-            self.__nova.authenticate()
-        except Exception as ex:
-            os.remove(self.__tmpconf)
-            raise ex
-
     def __get_cinder(self):
         if not self.__cinder:
             self.__checkenv()
@@ -299,12 +290,24 @@ class BaseClass(object):
         if self.__nova:
             return self.__nova
         self.__checkenv()
-        self.__nova = nova_client.Client(2,
-                                         username=os.environ.get('OS_USERNAME'),
-                                         api_key=os.environ.get('OS_PASSWORD'),
-                                         project_id=os.environ.get('OS_TENANT_NAME'),
-                                         auth_url=os.environ.get('OS_AUTH_URL'))
-        self.__check_connection()
+        import novaclient
+        nc_maj_ver, nc_ver_discard = novaclient.__version__.split('.', 1)
+        # this is work around a change that occured in
+        # novaclient somewhere between version 6 and 9.
+        # Possibly this needs to be changed to check
+        # against version 8 or 7.
+        if int(nc_maj_ver) < 9:
+            self.__nova = nova_client.Client(2,
+                                             username=os.environ.get('OS_USERNAME'),
+                                             password=os.environ.get('OS_PASSWORD'),
+                                             project_id=os.environ.get('OS_TENANT_NAME'),
+                                             auth_url=os.environ.get('OS_AUTH_URL'))
+        else:
+            self.__nova = nova_client.Client(2,
+                                             username=os.environ.get('OS_USERNAME'),
+                                             password=os.environ.get('OS_PASSWORD'),
+                                             project_name=os.environ.get('OS_TENANT_NAME'),
+                                             auth_url=os.environ.get('OS_AUTH_URL'))
         return self.__nova
 
     def __get_token(self):
@@ -427,7 +430,14 @@ class ImagesClass(BaseClass):
 
     @catch_exception("Problem getting the list of images.")
     def __images(self):
-        images = self.nova.images.list()
+        # Somewhere between novaclient version 6 and
+        # version 9, images was deprecated and replaced
+        # with glance.  If glance exists, use it.
+        # Otherwise fall back to the legacy images.
+        try:
+            images = self.nova.glance.list()
+        except AttributeError:
+            images = self.nova.images.list()
         x = PrettyTable(["Name", "ID", "Status"])
         x.align["Name"] = "l"
         rx = re.compile(self.__filter, re.IGNORECASE)
