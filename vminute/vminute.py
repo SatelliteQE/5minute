@@ -25,7 +25,6 @@ except ImportError:
     from urllib.request import urlopen
 
 try:
-    from keystoneclient.v2_0 import client as keystone_client
     from cinderclient import client as cinder_client
     from cinderclient import exceptions as cinder_exceptions
     from heatclient import client as heat_client
@@ -33,17 +32,21 @@ try:
     from neutronclient.neutron import client as neutron_client
     from novaclient import client as nova_client
     from novaclient import exceptions as nova_exceptions
-    from keystoneclient.auth.identity import v2 as keystoneIdentity
-    from keystoneclient import session as keystoneSession
+    from keystoneauth1.identity import v3 as keystoneIdentity
+    from keystoneauth1 import loading as keystoneLoading
+    from keystoneauth1 import session as keystoneSession
+    from keystoneclient.v3 import client as keystone_client
+    from glanceclient import client as glance_client
     import xmltodict
 except ImportError as ie:
     sys.stderr.write(str(ie) + "\n")
+    sys.stderr.write("The list of required modules are in requires.txt.\n")
     sys.exit(1)
 
 try:
     # Python 2.7
     from functools import wraps
-except:
+except Exception:
     # Python 2.4
     from backports.functools import wraps
 
@@ -205,6 +208,7 @@ class BaseClass(object):
     __cinder = None
     __heat = None
     __token = None
+    __session = None
     __neutron = None
     __first_check = False
     __tmpconf = "/tmp/5minute.conf"
@@ -262,29 +266,24 @@ class BaseClass(object):
 
     def __get_cinder(self):
         if not self.__cinder:
-            self.__checkenv()
-            self.__cinder = cinder_client.Client(1,
-                                                 os.environ.get('OS_USERNAME'),
-                                                 os.environ.get('OS_PASSWORD'),
-                                                 os.environ.get('OS_TENANT_NAME'),
-                                                 os.environ.get('OS_AUTH_URL'))
+            self.__cinder = cinder_client.Client(1, session=self.__get_session())
         return self.__cinder
 
     def __get_heat(self):
         if not self.__heat:
-            self.__checkenv()
-            endpoint = self.__get_endpoint('orchestration')
-            self.__heat = heat_client.Client(1, endpoint=endpoint,  token=self.token)
+            self.__heat = heat_client.Client(1, session=self.__get_session())
         return self.__heat
 
     def __get_keystone(self):
         if not self.__keystone:
             self.__checkenv()
-            self.__keystone = keystone_client.Client(username=os.environ.get('OS_USERNAME'),
-                                                     password=os.environ.get('OS_PASSWORD'),
-                                                     tenant_name=os.environ.get('OS_TENANT_NAME'),
-                                                     auth_url=os.environ.get('OS_AUTH_URL'))
+            self.__keystone = keystone_client.Client(session=self.__get_session())
         return self.__keystone
+
+    def __get_glance(self):
+        if not self.__glance:
+            self.__glance = glance_client.Client(2, session=self.__get_session())
+        return self.__glance
 
     def __get_nova(self):
         if self.__nova:
@@ -301,31 +300,31 @@ class BaseClass(object):
                                              username=os.environ.get('OS_USERNAME'),
                                              password=os.environ.get('OS_PASSWORD'),
                                              project_id=os.environ.get('OS_TENANT_NAME'),
+                                             app_version=os.environ.get('OS_IDENTITY_API_VERSION'),
                                              auth_url=os.environ.get('OS_AUTH_URL'))
         else:
-            self.__nova = nova_client.Client(2,
-                                             username=os.environ.get('OS_USERNAME'),
-                                             password=os.environ.get('OS_PASSWORD'),
-                                             project_name=os.environ.get('OS_TENANT_NAME'),
-                                             auth_url=os.environ.get('OS_AUTH_URL'))
+            self.__nova = nova_client.Client(2, session=self.__get_session())
         return self.__nova
 
     def __get_token(self):
         if not self.__token:
-            self.__checkenv()
-            auth = keystoneIdentity.Password(username=os.environ.get('OS_USERNAME'),
-                                             password=os.environ.get('OS_PASSWORD'),
-                                             tenant_name=os.environ.get('OS_TENANT_NAME'),
-                                             auth_url=os.environ.get('OS_AUTH_URL'))
-            session = keystoneSession.Session(auth=auth)
-            self.__token = auth.get_token(session)
+            self.__token = auth.get_token(self.__get_session())
         return self.__token
+
+    def __get_session(self):
+        if not self.__session:
+            self.__checkenv()
+            loader = keystoneLoading.get_plugin_loader('password')
+            auth = loader.load_from_options(username=os.environ.get('OS_USERNAME'),
+                                            password=os.environ.get('OS_PASSWORD'),
+                                            project_id=os.environ.get('OS_TENANT_ID'),
+                                            auth_url=os.environ.get('OS_AUTH_URL'))
+            self.__session = keystoneSession.Session(auth=auth)
+        return self.__session
 
     def __get_neutron(self):
         if not self.__neutron:
-            self.__checkenv()
-            endpoint = self.__get_endpoint('network')
-            self.__neutron = neutron_client.Client('2.0', endpoint_url=endpoint, token=self.token)
+            self.__neutron = neutron_client.Client('2.0', session=self.__get_session())
         return self.__neutron
 
     def __get_endpoint(self, name):
@@ -347,6 +346,8 @@ class BaseClass(object):
             return self.__get_token()
         elif name == 'neutron':
             return self.__get_neutron()
+        elif name == 'glance':
+                return self.__get_glance()
         return None
 
     @catch_exception("The problem parsing profile XML file. ")
@@ -354,7 +355,7 @@ class BaseClass(object):
         xml = None
         try:
             xml = urlopen('https://example.com/scenarios/%s' % filename).read()
-        except:
+        except Exception:
             warning("Profile '%s' doesn't exist." % filename)
             return dict()
         return xmltodict.parse(xml)
@@ -521,10 +522,7 @@ class ServerClass(BaseClass):
     @catch_exception("The image doesn't exist.", nova_exceptions.NotFound)
     @catch_exception("Name of the image is ambiguous, please use ID.", nova_exceptions.NoUniqueMatch)
     def get_image(self, id):
-        if re.match(r'^[0-9a-f\-]+$', id) is None:
-            return self.nova.images.find(name=id)
-        else:
-            return self.nova.images.get(id)
+        return self.nova.glance.find_image(id)
 
     @catch_exception("The volume doesn't exist.", cinder_exceptions.NotFound)
     @catch_exception("Name of the volume is ambiguous, please use ID.", cinder_exceptions.NoUniqueMatch)
@@ -532,7 +530,7 @@ class ServerClass(BaseClass):
         if re.match(r'^[0-9a-f\-]+$', id) is None:
             return self.cinder.volumes.find(display_name=id)
         else:
-            return self.cinder.volumes.get(id)
+            return self.cinder.volgumes.get(id)
 
     @catch_exception("The snapshot doesn't exist.")
     def get_snapshot(self, id):
@@ -575,11 +573,11 @@ class ServerClass(BaseClass):
             ip_pool_bit_size = address_size - ip_pool_mask
             max_pool_size = 2 ** ip_pool_bit_size - 2
             return max_pool_size - len([ip_addr for ip_addr in flist if
-                                        ip_addr.pool == cidr and ip_addr.instance_id])
+                                        ip_addr.get('floating_ip_address') == cidr])
         nets = self.get_networks(filter={'name': "^default-", "router:external": False})
         max_network_space = 0
         current_biggest_network = None
-        flist = self.nova.floating_ips.list()
+        flist = self.neutron.list_floatingips().get('floatingips')
         res = list()
         for net in nets:
             pub_net = self.__get_external_for_private_network(net)
@@ -690,14 +688,15 @@ class DeleteInstanceClass(ServerClass):
         for it in argv:
             self.kill_instances(it)
 
-#    @catch_exception("The problem deleting of the instances.")
+    @catch_exception("The problem deleting of the instances.")
     def kill_instances(self, id):
         server = self.get_instances(id)
         progress(title="Release floating IP:")
         # This is stupid method for checking of lock, if it is activated
-        fips = self.nova.floating_ips.findall(instance_id=server.id)
+        k, fips = server.addresses.popitem()
         for fip in fips:
-            server.remove_floating_ip(fip.ip)
+            if (fip.get('OS-EXT-IPS:type') == 'floating'):
+                server.remove_floating_ip(fip.get('addr'))
         progress(result="DONE")
         vols = self.nova.volumes.get_server_volumes(server.id)
         if len(vols) > 0:
@@ -723,10 +722,14 @@ class DeleteInstanceClass(ServerClass):
             else:
                 progress(result="FAIL")
         for fip in fips:
-            if done:
-                self.nova.floating_ips.delete(fip.id)
-            else:
-                server.add_floating_ip(fip.ip)
+            if (fip.get('OS-EXT-IPS:type') == 'floating'):
+                if done:
+                    # self.nova.floating_ips.delete(fip.get('addr'))
+                    ips = self.neutron.list_floatingips(
+                        floating_ip_address=fip.get('addr')).get('floatingips')
+                    self.neutron.delete_floatingip(ips[0]['id'])
+                else:
+                    server.add_floating_ip(fip.get('addr'))
         if 'skip-volume' not in self.params:
             for vol in vols:
                 cvol = self.cinder.volumes.get(vol.id)
@@ -761,7 +764,7 @@ class SnapshotInstanceClass(ServerClass):
     """
     def __parse_params(self, opts, argv):
         params = {}
-        params['metadata'] = {}
+        params['metadata'] = None
         for key, val in opts:
             if key in ('--help', '-h'):
                 params['help'] = True
@@ -769,6 +772,8 @@ class SnapshotInstanceClass(ServerClass):
             elif key in ('--name', '-n'):
                 params['name'] = "%s" % val
             elif key in ('--metadata', '-m'):
+                if params['metadata'] is None:
+                    params['metadata'] = {}
                 for it in val.split(';'):
                     col, val = it.split('=')
                     params['metadata'][col] = val.replace(',', ' ')
@@ -811,12 +816,15 @@ class SnapshotInstanceClass(ServerClass):
 
     def delete_snapshot(self):
         snapshot = self.params.get("snapshot")
-        svols = snapshot.metadata.get('volumes', "").split()
+        svols = snapshot.to_dict().get('volumes', "").split()
         progress(title="Delete snapshot:")
-        snapshot.delete()
-        while len(self.nova.images.findall(id=snapshot.id)) > 0:
-            time.sleep(1)
-            progress()
+        self.glance.images.delete(snapshot.id)
+        try:
+            while self.nova.glance.find_image(snapshot.id):
+                time.sleep(1)
+                progress()
+        except Exception:
+            pass
         progress(result="DONE")
         if self.params.get("volume"):
             for it in svols:
@@ -829,7 +837,7 @@ class SnapshotInstanceClass(ServerClass):
                         time.sleep(1)
                         progress()
                     progress(result="DONE")
-                except:
+                except Exception:
                     progress(result="FAIL")
 
     def shapshot_instance(self):
@@ -877,26 +885,25 @@ class SnapshotInstanceClass(ServerClass):
                     progress(result="FAIL")
 
         progress(title="Create snapshot:")
-        image_id = self.nova.servers.create_image(server, name,
-                                                  self.params.get('metadata'))
-        status = self.nova.images.get(image_id).status
-        while status in ['SAVING', ]:
+        image_id = server.create_image(name, self.params.get('metadata'))
+        status = self.nova.glance.find_image(image_id).status.upper()
+        while status in ['SAVING', 'QUEUED']:
             time.sleep(1)
             progress()
-            status = self.nova.images.get(image_id).status
+            status = self.nova.glance.find_image(image_id).status.upper()
         if status == 'ACTIVE':
             progress(result="DONE")
             progress(title="Snapshot ID:")
             progress(result=image_id)
             progress(title="Snapshot Name:")
-            progress(result=self.nova.images.get(image_id).name)
+            progress(result=self.nova.glance.find_image(image_id).name)
         else:
             progress(result="FAIL")
 
     def help(self):
         print("""
          Usage: 5minute snapshot [PARAM] <NAME|ID>
-         Delete instance.
+         Create or delete snapshot of the instance.
 
          PARAM:
              -n, --name      name of the snapshot
@@ -988,9 +995,9 @@ class BootInstanceClass(ServerClass):
         self.variables[key] = val
 
     def __release_resources(self):
-        if "floating-ip" in self.variables and \
+        if self.variables and "floating-ip" in self.variables and \
                 self.variables.get("floating-ip"):
-            self.nova.floating_ips.delete(self.variables['floating-ip'])
+            self.neutron.delete_floatingip(self.variables['floating-ip']['id'])
         if self.created_volume:
             cvol = self.cinder.volumes.get(self.volume.id)
             cvol.detach()
@@ -1002,8 +1009,8 @@ class BootInstanceClass(ServerClass):
         with disable_catch_exception():
             try:
                 images = [self.params['image'], ]
-                dep_images = self.params['image']\
-                    .metadata.get('dependencies', "").split()
+                dep_images = self.params['image'].to_dict()\
+                    .get('dependencies', "").split()
                 for img_name in dep_images:
                     images = [self.get_image(img_name), ] + images
                 dep_IPs = dict()
@@ -1022,7 +1029,7 @@ class BootInstanceClass(ServerClass):
                     else:
                         self.add_variable('name', "%s-%s" % (USER, image.name))
                     self.__setup_networking()
-                    dep_IPs[dep_name] = self.variables.get('floating-ip').ip
+                    dep_IPs[dep_name] = self.variables.get('floating-ip')['floating_ip_address']
                     self.__setup_volume(image)
                     self.__setup_userdata_script(image)
                     self.__choose_flavor(image)
@@ -1053,14 +1060,19 @@ class BootInstanceClass(ServerClass):
         network = self.get_stable_private_network()
         progress(result=network['private']['name'])
         progress(title='Obtaining a floating IP:')
-        floating_ip = self.nova.floating_ips.create(network['public']['id'])
+        floating_ip = self.neutron.create_floatingip({
+           'floatingip': {
+              'floating_network_id': network['public']['id']
+           }})
         if not floating_ip:
             raise Exception("Problem getting an IP address.")
+        else:
+            floating_ip = floating_ip['floatingip']
         self.add_variable('floating-ip', floating_ip)
         self.add_variable('private-net', network['private']['id'])
-        progress(result=floating_ip.ip)
+        progress(result=floating_ip['floating_ip_address'])
         progress(title='Obtaining a domain name:')
-        hostname = get_FQDN_from_IP(floating_ip.ip)
+        hostname = get_FQDN_from_IP(floating_ip['floating_ip_address'])
         if not hostname:
             raise Exception("Problem getting a DNS record.")
         self.add_variable('hostname', hostname)
@@ -1072,8 +1084,8 @@ class BootInstanceClass(ServerClass):
         filenames = None
         if "userdata" in self.params:
             filenames = self.params['userdata']
-        elif "cscripts" in image.metadata:
-            filenames = image.metadata['cscripts']
+        elif "cscripts" in image.to_dict():
+            filenames = image.to_dict().get('cscripts')
         if filenames:
             progress(title='Loading the userdata script:')
             self.params['cscript'] = "#!/bin/bash\n"
@@ -1090,7 +1102,7 @@ class BootInstanceClass(ServerClass):
         self.volume = None
         if not self.params.get('novolume', False):
             volume_name = self.params.get('volume',
-                                          image.metadata.get('volumes'))
+                                          image.to_dict().get('volumes'))
             if volume_name:
                 # Is the volume_name name/id of existing volume?
                 try:
@@ -1124,10 +1136,10 @@ class BootInstanceClass(ServerClass):
     def __choose_flavor(self, image):
         progress(title="Used  flavor:")
         if 'flavor' not in self.variables:
-            if 'default_flavor' in image.metadata:
+            if 'default_flavor' in image.to_dict():
                 self.add_variable(
                     'flavor',
-                    self.get_flavor(image.metadata.get('default_flavor')))
+                    self.get_flavor(image.to_dict().get('default_flavor')))
             if self.variables.get('flavor') is None:
                 self.add_variable(
                     'flavor',
@@ -1164,7 +1176,7 @@ class BootInstanceClass(ServerClass):
         else:
             progress(result="FAIL")
         if "floating-ip" in self.variables:
-            server.add_floating_ip(self.variables['floating-ip'])
+            server.add_floating_ip(self.variables['floating-ip']['floating_ip_address'])
         self.__check_console_output(server)
 
     def __check_console_output(self, server):

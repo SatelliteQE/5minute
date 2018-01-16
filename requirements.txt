@@ -1,7 +1,8 @@
 xmltodict
 PrettyTable
-python-novaclient<=6.0.0
+python-novaclient
 python-keystoneclient
 python-cinderclient
 python-neutronclient
 python-heatclient
+python-glanceclient

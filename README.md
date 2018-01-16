@@ -13,6 +13,7 @@ To run 5minute you need to install following libs:
     python3-heatclient
     python3-neutronclient
     python3-novaclient
+    python3-glanceclient
     python3-xmltodict
     python3-prettytable
 
