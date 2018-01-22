@@ -5,3 +5,4 @@ python3-xmltodict
 python3-prettytable
 python3-novaclient
 python3-keystoneclient
+python3-glanceclient
