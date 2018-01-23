@@ -46,7 +46,7 @@ setup(
     install_requires=reqs,
     packages=find_packages(),
     package_data={
-        'vminute': ['scenarios/README']
+        '': ['README.md']         
     },
     entry_points={
         'console_scripts': [
