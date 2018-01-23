@@ -28,7 +28,7 @@ def get_version():
 
 
 setup(
-    name='5minute',
+    name='vminute',
     version=get_version(),
     description='A tool for quick creation and deployment of Openstack machines used for QA testing.',
     long_description=long_description,
@@ -46,7 +46,7 @@ setup(
     install_requires=reqs,
     packages=find_packages(),
     package_data={
-        'vminute': ['scenarios/README']
+        '': ['README.md']
     },
     entry_points={
         'console_scripts': [
