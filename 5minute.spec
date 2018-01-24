@@ -9,6 +9,15 @@ Source0: https://github.com/BlackSmith/%{name}/archive/%{version}.tar.gz
 
 BuildArch:      noarch
 BuildRequires:  python3-devel
+BuildRequires:  python3
+BuildRequires:  python3-cinderclient
+BuildRequires:  python3-heatclient
+BuildRequires:  python3-neutronclient
+BuildRequires:  python3-xmltodict
+BuildRequires:  python3-prettytable
+BuildRequires:  python3-novaclient
+BuildRequires:  python3-keystoneclient
+BuildRequires:  python3-glanceclient
 Requires:       python3
 Requires:	python3-cinderclient 
 Requires:       python3-heatclient
