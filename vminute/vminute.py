@@ -530,7 +530,7 @@ class ServerClass(BaseClass):
         if re.match(r'^[0-9a-f\-]+$', id) is None:
             return self.cinder.volumes.find(display_name=id)
         else:
-            return self.cinder.volgumes.get(id)
+            return self.cinder.volumes.get(id)
 
     @catch_exception("The snapshot doesn't exist.")
     def get_snapshot(self, id):
