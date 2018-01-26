@@ -530,7 +530,7 @@ class ServerClass(BaseClass):
         if re.match(r'^[0-9a-f\-]+$', id) is None:
             return self.cinder.volumes.find(display_name=id)
         else:
-            return self.cinder.volgumes.get(id)
+            return self.cinder.volumes.get(id)
 
     @catch_exception("The snapshot doesn't exist.")
     def get_snapshot(self, id):
@@ -694,9 +694,15 @@ class DeleteInstanceClass(ServerClass):
         progress(title="Release floating IP:")
         # This is stupid method for checking of lock, if it is activated
         k, fips = server.addresses.popitem()
+        fids = []
         for fip in fips:
             if (fip.get('OS-EXT-IPS:type') == 'floating'):
-                server.remove_floating_ip(fip.get('addr'))
+                    idip = self.neutron.\
+                        list_floatingips(floating_ip_address=fip.get('addr'))\
+                        .get('floatingips')[0].get('id')
+                    self.neutron.update_floatingip(idip, {"floatingip": {
+                                                            'port_id': None}})
+                    fids.append(idip)
         progress(result="DONE")
         vols = self.nova.volumes.get_server_volumes(server.id)
         if len(vols) > 0:
@@ -721,15 +727,14 @@ class DeleteInstanceClass(ServerClass):
                 progress(result="\x1b[31;01mLOCKED\x1b[39;49;00m")
             else:
                 progress(result="FAIL")
-        for fip in fips:
-            if (fip.get('OS-EXT-IPS:type') == 'floating'):
+        for fi in fids:
                 if done:
-                    # self.nova.floating_ips.delete(fip.get('addr'))
-                    ips = self.neutron.list_floatingips(
-                        floating_ip_address=fip.get('addr')).get('floatingips')
-                    self.neutron.delete_floatingip(ips[0]['id'])
+                    self.neutron.delete_floatingip(fi)
                 else:
-                    server.add_floating_ip(fip.get('addr'))
+                    interface = server.interface_list().pop()
+                    if interface:
+                        self.neutron.update_floatingip(fi, {"floatingip": {
+                                'port_id': interface.port_id}})
         if 'skip-volume' not in self.params:
             for vol in vols:
                 cvol = self.cinder.volumes.get(vol.id)
@@ -1078,7 +1083,7 @@ class BootInstanceClass(ServerClass):
         self.add_variable('hostname', hostname)
         progress(result=hostname)
 
-#    @catch_exception("The problem with downloading of the userdata script for this image")
+    @catch_exception("The problem with downloading of the userdata script for this image")
     def __setup_userdata_script(self, image):
         res = None
         filenames = None
@@ -1161,7 +1166,6 @@ class BootInstanceClass(ServerClass):
                       'config_drive': True}
         if self.volume:
             param_dict['block_device_mapping'] = {'vdb': self.volume.id}
-#        print(param_dict)
         if "cscript" in self.params:
             param_dict['userdata'] = self.params['cscript']
         server = self.nova.servers.create(**param_dict)
@@ -1170,13 +1174,15 @@ class BootInstanceClass(ServerClass):
             time.sleep(1)
             progress()
             status = self.nova.servers.get(server.id).status
-#            print server.progress
         if status == 'ACTIVE':
             progress(result="DONE")
         else:
             progress(result="FAIL")
         if "floating-ip" in self.variables:
-            server.add_floating_ip(self.variables['floating-ip']['floating_ip_address'])
+            interface = server.interface_list().pop()
+            self.neutron.update_floatingip(
+                self.variables['floating-ip']['id'],
+                {"floatingip": {'port_id': interface.port_id}})
         self.__check_console_output(server)
 
     def __check_console_output(self, server):
