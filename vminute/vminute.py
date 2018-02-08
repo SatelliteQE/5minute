@@ -427,16 +427,24 @@ class KeyClass(BaseClass):
 
 
 class ImagesClass(BaseClass):
-    __filter = r"^(5minute-|%s-)" % USER
+    __filter = None
+    __default_filter = r"^(5minute-|%s-)" % USER
 
     @catch_exception("Problem getting the list of images.")
     def __images(self):
+        # This is time optimalization, it is 5-times faster.
+        ff = {}
+        if self.__filter == self.__default_filter:
+            # Call simple method for create session object
+            self.nova.api_version.is_null()
+            ff = {'filters': {'owner': os.environ.get('OS_TENANT_ID')}}
+
         # Somewhere between novaclient version 6 and
         # version 9, images was deprecated and replaced
         # with glance.  If glance exists, use it.
         # Otherwise fall back to the legacy images.
         try:
-            images = self.nova.glance.list()
+            images = self.glance.images.list(**ff)
         except AttributeError:
             images = self.nova.images.list()
         x = PrettyTable(["Name", "ID", "Status"])
@@ -449,6 +457,7 @@ class ImagesClass(BaseClass):
         print((x.get_string(sortby="Name")))
 
     def cmd(self, argv):
+        self.__filter = self.__default_filter
         if len(argv) > 0:
             if argv[0] in ('help', '--help', '-h'):
                 self.help()
