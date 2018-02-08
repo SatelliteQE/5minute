@@ -1,6 +1,6 @@
 Name:	 5minute	
-Version: 0.2.26
-Release: 2%{?dist}
+Version: 0.2.27
+Release: 1%{?dist}
 Summary: Command line tool for getting instance from OpenStack	
 
 License: GPLv2	
