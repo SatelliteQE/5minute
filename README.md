@@ -17,9 +17,10 @@ To run 5minute you need to install following libs:
     python3-xmltodict
     python3-prettytable
 
-To install them from RPMs (Fedora), please do `dnf -y install $( cat requirement-rpms.txt )`.
-
-If you have installed 5minute using pip, they were installed as dependencies. Otherwise, you have to install them manually.
+To install them from RPMs (Fedora), please do `dnf -y install $( cat requirement-rpms.txt )`
+or install RPM package from https://copr.fedorainfracloud.org/coprs/mkorbel/5minute/packages/
+ 
+If you have installed 5minute using `pip install vminute`, they were installed as dependencies. Otherwise, you have to install them manually.
 
 Get config file:
 
