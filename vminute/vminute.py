@@ -1202,7 +1202,7 @@ class BootInstanceClass(ServerClass):
         counter = 60
         isatty = sys.stderr.isatty()
         reg_exit = re.compile(r".*login:\s*$")
-        if len(self.params['cscript']) > 0:
+        if 'cscript' in self.params and len(self.params['cscript']) > 0:
             reg_exit = re.compile(self.cinit_ending_text)
         if show_output:
             print("Booting of the instance:")
