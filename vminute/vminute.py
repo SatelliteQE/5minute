@@ -788,9 +788,13 @@ class SnapshotInstanceClass(ServerClass):
             elif key in ('--metadata', '-m'):
                 if params['metadata'] is None:
                     params['metadata'] = {}
-                for it in val.split(';'):
-                    col, val = it.split('=')
-                    params['metadata'][col] = val.replace(',', ' ')
+                try:
+                    for it in val.split(';'):
+                        col, val = it.split('=')
+                        params['metadata'][col] = val.replace(',', ' ')
+                except Exception:
+                    die("The problem with parsing of metadata parameter. "
+                        "Please try 5minute snapshot --help.")
             elif key in ('--umount', '-u'):
                 params['umount'] = True
             elif key in ('--volume'):
@@ -801,7 +805,7 @@ class SnapshotInstanceClass(ServerClass):
                 params['delete'] = True
             else:
                 die("Bad parameter '%s'. Please try 5minute "
-                    "screenshot --help." % key)
+                    "snapshot --help." % key)
         if 'delete' in params:
             if len(argv) != 1:
                 die("Name of the snapshot is ambiguous or empty.")
