@@ -64,7 +64,7 @@ PROGRESS = None
 
 def die(message, excode=1, exception=None):
     """
-    Print error message into srdErr
+    Print error message into stdErr
     :param message: message
     :param excode: exitcode
     :param exception: exception for debugging mode
@@ -182,7 +182,7 @@ def catch_exception(text=None, type=Exception):
 
 
 class disable_catch_exception:
-    """ Disbale decorator for catch exception. """
+    """ Disable decorator for catch exception. """
     def __enter__(self):
         global DISABLE_CATCH
         DISABLE_CATCH = True
@@ -291,7 +291,7 @@ class BaseClass(object):
         self.__checkenv()
         import novaclient
         nc_maj_ver, nc_ver_discard = novaclient.__version__.split('.', 1)
-        # this is work around a change that occured in
+        # this is work around a change that occurred in
         # novaclient somewhere between version 6 and 9.
         # Possibly this needs to be changed to check
         # against version 8 or 7.
@@ -432,7 +432,7 @@ class ImagesClass(BaseClass):
 
     @catch_exception("Problem getting the list of images.")
     def __images(self):
-        # This is time optimalization, it is 5-times faster.
+        # This is time optimization, it is 5-times faster.
         ff = {}
         if self.__filter == self.__default_filter:
             # Call simple method for create session object
@@ -667,7 +667,7 @@ class ListInstancesClass(ServerClass):
 
 class DeleteInstanceClass(ServerClass):
     """
-     This is only view on the ServerClass for deletting of instance.
+     This is only view on the ServerClass for deleting of instance.
     """
 
     def __parse_params(self, opts, argv):
@@ -1482,7 +1482,7 @@ class ListScenarioClass(ScenarioClass):
 
 class DeleteScenarioClass(ScenarioClass):
     """
-     This is only view on the ServerClass for deletting of instance.
+     This is only view on the ServerClass for deleting of instance.
     """
     def cmd(self, argv):
         if len(argv) == 0:
