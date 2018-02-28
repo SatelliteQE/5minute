@@ -407,6 +407,7 @@ class BaseClass(object):
 
 
 class KeyClass(BaseClass):
+
     @catch_exception("The problem with public key upload.")
     def __upload_key(self, key):
         if not os.access(key, os.R_OK):
@@ -491,6 +492,7 @@ class ImagesClass(BaseClass):
 
 
 class FlavorClass(BaseClass):
+
     @catch_exception("Problem getting list of flavors.")
     def __flavors(self):
         flavors = self.nova.flavors.list()
@@ -523,6 +525,7 @@ class FlavorClass(BaseClass):
 
 
 class ServerClass(BaseClass):
+
     @catch_exception("The instance doesn't exist.", nova_exceptions.NotFound)
     @catch_exception("Name of the instance is ambiguous, please use ID.", nova_exceptions.NoUniqueMatch)
     def get_instances(self, id):
@@ -857,7 +860,7 @@ class SnapshotInstanceClass(ServerClass):
                     svol = self.get_snapshot(it)
                     svol.delete()
                     while len(self.nova
-                                      .volume_snapshots.findall(id=svol.id)) > 0:
+                              .volume_snapshots.findall(id=svol.id)) > 0:
                         time.sleep(1)
                         progress()
                     progress(result="DONE")
@@ -1314,6 +1317,7 @@ class ScenarioClass(ServerClass):
 
 
 class TemplateScenarioClass(ScenarioClass):
+
     def __get_list_templates(self):
         templates = list()
         folder = os.path.expanduser(self._scenarios)
@@ -1346,6 +1350,7 @@ class TemplateScenarioClass(ScenarioClass):
 
 
 class BootScenarioClass(ScenarioClass):
+
     @catch_exception("Bad parameter. Please try 5minute scenario boot --help.")
     def cmd(self, argv):
         params = dict()
@@ -1444,6 +1449,7 @@ class BootScenarioClass(ScenarioClass):
 
 
 class ListScenarioClass(ScenarioClass):
+
     def cmd(self, argv):
         filter = None
         if len(argv) == 0:
