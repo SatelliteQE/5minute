@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import getopt
-import os
-import sys
-import re
-import termios
 import fcntl
+import getopt
+import math
+import os
+import random
+import re
 import subprocess
-import urllib.request
+import sys
+import termios
+import time
+import traceback
 import urllib.error
 import urllib.parse
-import random
-import time
-import math
-import traceback
-from prettytable import PrettyTable
+import urllib.request
 from datetime import datetime
-import socket
+
+from prettytable import PrettyTable
 
 try:
     from urllib import urlopen
