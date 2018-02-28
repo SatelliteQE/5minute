@@ -366,14 +366,14 @@ class BaseClass(object):
     def help(self):
         print("""
             Usage: 5minute <-d|--debug>  [COMMAND]
-            Manager for your openstack machines.
+            Manager for your OpenStack machines.
 
             OPTIONS:
                 -d, --debug - enable debugging mode.
 
             COMMANDS:
                 help        - this help
-                key         - upload your SSL key to the server
+                key         - upload your SSH key to the server
                 images      - the list of accessible images
                 flavors     - the list of flavors
                 list        - the list of instances
@@ -418,8 +418,8 @@ class KeyClass(BaseClass):
 
     def help(self):
         print("""
-            Usage: 5minute key <SSL-PUB-KEY>
-            Upload your SSL key to the OpenStack server.
+            Usage: 5minute key <SSH-PUB-KEY>
+            Upload your SSH key to the OpenStack server.
 
             Examples:
                 5minute key ~/.ssh/id_dsa.pub
@@ -928,8 +928,8 @@ class SnapshotInstanceClass(ServerClass):
              --delete        delete snapshot (with / without snapshot of the volume)
              -u, --umount    umount all volumes
              --volume        create/delete a snapshot of the volume and assign it to the snapshot of the instance
-             -s, --shutdown  shutdown of the instance before snapshot
-             -m, --metadata  metadata for image. pair key=val separated by semicolon
+             -s, --shutdown  shutdown the instance before snapshot
+             -m, --metadata  metadata for image, pair key=val separated by semicolon
              <NAME|ID>   Name or ID of instance / snapshot (deleting)
 
          Examples:
@@ -1065,7 +1065,7 @@ class BootInstanceClass(ServerClass):
               -n, --name      name of the instance
               -f, --flavor    name of flavor
               -v, --volume    the volume snapshot (default: 5minute-satellite5-rpms)
-              --novolume      no voluume snapshot
+              --novolume      no volume snapshot
               -c, --console   display the console output during booting
               --userdata      the paths or URLs to cloud-init scripts
 
