@@ -17,9 +17,9 @@ reqs = [str(ir.req) for ir in install_reqs]
 
 
 def get_version():
-    VERSIONFILE = path.join('vminute', '__init__.py')
+    VERSIONFILE = path.join('5minute.spec')
     initfile_lines = open(VERSIONFILE, 'rt').readlines()
-    VSRE = r"^__version__ ?= ?['\"]([^'\"]*)['\"]"
+    VSRE = r"^Version:\s*([^'\"]*)\s*"
     for line in initfile_lines:
         mo = re.search(VSRE, line, re.M)
         if mo:

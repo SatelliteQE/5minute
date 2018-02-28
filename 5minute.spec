@@ -1,11 +1,11 @@
-Name:	 5minute	
-Version: 0.2.28
+Name:	 5minute
+Version: 0.2.29
 Release: 1%{?dist}
-Summary: Command line tool for getting instance from OpenStack	
+Summary: Command line tool for getting instance from OpenStack
 
-License: GPLv2	
-URL:	 https://github.com/SatelliteQE/5minute	
-Source0: https://github.com/BlackSmith/%{name}/archive/%{version}.tar.gz	
+License: GPLv2
+URL:	 https://github.com/SatelliteQE/5minute
+Source0: https://github.com/BlackSmith/%{name}/archive/%{version}.tar.gz
 
 BuildArch:      noarch
 BuildRequires:  python3-devel
@@ -19,7 +19,7 @@ BuildRequires:  python3-novaclient
 BuildRequires:  python3-keystoneclient
 BuildRequires:  python3-glanceclient
 Requires:       python3
-Requires:	python3-cinderclient 
+Requires:	      python3-cinderclient
 Requires:       python3-heatclient
 Requires:       python3-neutronclient
 Requires:       python3-xmltodict
@@ -51,4 +51,3 @@ Give me an instance of mine image on OpenStack. Hurry!
 %{python3_sitelib}/*
 
 %changelog
-
