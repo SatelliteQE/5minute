@@ -1,10 +1,10 @@
-Name:	 5minute
+Name:    5minute
 Version: 0.2.29
 Release: 1%{?dist}
 Summary: Command line tool for getting instance from OpenStack
 
 License: GPLv2
-URL:	 https://github.com/SatelliteQE/5minute
+URL:     https://github.com/SatelliteQE/5minute
 Source0: https://github.com/BlackSmith/%{name}/archive/%{version}.tar.gz
 
 BuildArch:      noarch
@@ -19,7 +19,7 @@ BuildRequires:  python3-novaclient
 BuildRequires:  python3-keystoneclient
 BuildRequires:  python3-glanceclient
 Requires:       python3
-Requires:	      python3-cinderclient
+Requires:       python3-cinderclient
 Requires:       python3-heatclient
 Requires:       python3-neutronclient
 Requires:       python3-xmltodict
