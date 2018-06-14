@@ -1123,8 +1123,7 @@ class BootInstanceClass(ServerClass):
                 self.params['cscript'] += "\n"
             self.params['cscript'] += 'echo "\n%s" > /dev/ttyS0;' %\
                 self.cinit_ending_text
-            self.params['cscript'] +=  'wall "%s"' % self.cinit_ending_text
-
+            self.params['cscript'] += 'wall "%s"' % self.cinit_ending_text
             progress(result="DONE")
 
     def __setup_volume(self, image):
