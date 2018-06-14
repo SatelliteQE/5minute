@@ -1,5 +1,5 @@
 Name:	 5minute
-Version: 0.2.29
+Version: 0.2.30
 Release: 1%{?dist}
 Summary: Command line tool for getting instance from OpenStack
 
