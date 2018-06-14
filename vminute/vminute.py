@@ -1058,8 +1058,8 @@ class BootInstanceClass(ServerClass):
                     self.__setup_networking()
                     dep_IPs[dep_name] = self.variables.get('floating-ip')['floating_ip_address']
                     self.__setup_volume(image)
-                    self.__setup_userdata_script(image)
                     self.__choose_flavor(image)
+                    self.__setup_userdata_script(image)
                     self.__create_instance(image)
             except Exception as ex:
                 self.__release_resources()
@@ -1121,8 +1121,9 @@ class BootInstanceClass(ServerClass):
                 cscript = re.sub(r'^#!/bin/bash', '', cscript, flags=re.M)
                 self.params['cscript'] += cscript.format(**self.variables)
                 self.params['cscript'] += "\n"
-            self.params['cscript'] += 'echo "\n%s" > /dev/ttyS0;' % \
-                                      self.cinit_ending_text
+            self.params['cscript'] += 'echo "\n%s" > /dev/ttyS0;' %\
+                self.cinit_ending_text
+            self.params['cscript'] += 'wall "%s"' % self.cinit_ending_text
             progress(result="DONE")
 
     def __setup_volume(self, image):
@@ -1211,7 +1212,8 @@ class BootInstanceClass(ServerClass):
         lindex = 0
         show_output = self.params.get('console')
         exit_status = None
-        counter = 60
+        exit_message = "DONE"
+        counter = 300
         isatty = sys.stderr.isatty()
         reg_exit = re.compile(r".*login:\s*$")
         if 'cscript' in self.params and len(self.params['cscript']) > 0:
@@ -1235,7 +1237,7 @@ class BootInstanceClass(ServerClass):
                 if not show_output:
                     progress()
             else:
-                counter = 60
+                counter = 300
                 # we can work only with new lines
                 output = output[-1 * (length - length_old):]
                 length_old = length
