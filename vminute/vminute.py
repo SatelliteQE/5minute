@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import getopt
-import os
-import sys
-import re
-import termios
 import fcntl
+import getopt
+import math
+import os
+import random
+import re
 import subprocess
-import urllib.request
+import sys
+import termios
+import time
+import traceback
 import urllib.error
 import urllib.parse
-import random
-import time
-import math
-import traceback
-from prettytable import PrettyTable
+import urllib.request
 from datetime import datetime
-import socket
+
+from prettytable import PrettyTable
 
 try:
     from urllib import urlopen
@@ -50,12 +50,12 @@ except Exception:
     # Python 2.4
     from backports.functools import wraps
 
-
 CONF_DIR = '~/.5minute'
 USER = os.environ["USER"]
 DEBUG = False
 DISABLE_CATCH = False
 PROGRESS = None
+
 
 # -----------------------------------------------------------
 # Helpers functions
@@ -64,7 +64,7 @@ PROGRESS = None
 
 def die(message, excode=1, exception=None):
     """
-    Print error message into srdErr
+    Print error message into stdErr
     :param message: message
     :param excode: exitcode
     :param exception: exception for debugging mode
@@ -164,6 +164,7 @@ def progress(title=None, result=None):
 
 def catch_exception(text=None, type=Exception):
     """  Decorator for catch exception   """
+
     def decorate(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -177,12 +178,15 @@ def catch_exception(text=None, type=Exception):
                     die(catch_message, exception=ex)
                 else:
                     raise ex
+
         return wrapper
+
     return decorate
 
 
 class disable_catch_exception:
-    """ Disbale decorator for catch exception. """
+    """ Disable decorator for catch exception. """
+
     def __enter__(self):
         global DISABLE_CATCH
         DISABLE_CATCH = True
@@ -196,6 +200,7 @@ def get_FQDN_from_IP(ip):
     # If we want to support old version of OpenStack, we have to update this function and
     # solve it via serviceman
     return "host-{1}-{2}-{3}.host.centralci.eng.rdu2.redhat.com".format(*ip.split("."))
+
 
 # -----------------------------------------------------------
 # Classes
@@ -291,7 +296,7 @@ class BaseClass(object):
         self.__checkenv()
         import novaclient
         nc_maj_ver, nc_ver_discard = novaclient.__version__.split('.', 1)
-        # this is work around a change that occured in
+        # this is work around a change that occurred in
         # novaclient somewhere between version 6 and 9.
         # Possibly this needs to be changed to check
         # against version 8 or 7.
@@ -347,7 +352,7 @@ class BaseClass(object):
         elif name == 'neutron':
             return self.__get_neutron()
         elif name == 'glance':
-                return self.__get_glance()
+            return self.__get_glance()
         return None
 
     @catch_exception("The problem parsing profile XML file. ")
@@ -366,14 +371,14 @@ class BaseClass(object):
     def help(self):
         print("""
             Usage: 5minute <-d|--debug>  [COMMAND]
-            Manager for your openstack machines.
+            Manager for your OpenStack machines.
 
             OPTIONS:
                 -d, --debug - enable debugging mode.
 
             COMMANDS:
                 help        - this help
-                key         - upload your SSL key to the server
+                key         - upload your SSH key to the server
                 images      - the list of accessible images
                 flavors     - the list of flavors
                 list        - the list of instances
@@ -402,6 +407,7 @@ class BaseClass(object):
 
 
 class KeyClass(BaseClass):
+
     @catch_exception("The problem with public key upload.")
     def __upload_key(self, key):
         if not os.access(key, os.R_OK):
@@ -418,8 +424,8 @@ class KeyClass(BaseClass):
 
     def help(self):
         print("""
-            Usage: 5minute key <SSL-PUB-KEY>
-            Upload your SSL key to the OpenStack server.
+            Usage: 5minute key <SSH-PUB-KEY>
+            Upload your SSH key to the OpenStack server.
 
             Examples:
                 5minute key ~/.ssh/id_dsa.pub
@@ -432,7 +438,7 @@ class ImagesClass(BaseClass):
 
     @catch_exception("Problem getting the list of images.")
     def __images(self):
-        # This is time optimalization, it is 5-times faster.
+        # This is time optimization, it is 5-times faster.
         ff = {}
         if self.__filter == self.__default_filter:
             # Call simple method for create session object
@@ -493,12 +499,12 @@ class FlavorClass(BaseClass):
         x = PrettyTable(["Name", "CPU", "RAM", "HDD", "ephemeral", "swap"])
         x.align["Name"] = "l"
         for flav in flavors:
-                row = [flav.name, flav.vcpus,
-                       "%s MB" % flav.ram,
-                       "%s GB" % flav.disk,
-                       "%s GB" % flav.ephemeral,
-                       "%s MB" % flav.swap if flav.swap else ""]
-                x.add_row(row)
+            row = [flav.name, flav.vcpus,
+                   "%s MB" % flav.ram,
+                   "%s GB" % flav.disk,
+                   "%s GB" % flav.ephemeral,
+                   "%s MB" % flav.swap if flav.swap else ""]
+            x.add_row(row)
         print(x)
 
     def cmd(self, argv):
@@ -562,7 +568,7 @@ class ServerClass(BaseClass):
             if filter is None:
                 return True
             for key, val in list(filter.items()):
-                if isinstance(val,  str):
+                if isinstance(val, str):
                     if re.search(val, net.get(key, "")) is None:
                         return False
                 elif val != net.get(key):
@@ -583,6 +589,7 @@ class ServerClass(BaseClass):
             max_pool_size = 2 ** ip_pool_bit_size - 2
             return max_pool_size - len([ip_addr for ip_addr in flist if
                                         ip_addr.get('floating_ip_address') == cidr])
+
         nets = self.get_networks(filter={'name': "^default-", "router:external": False})
         max_network_space = 0
         current_biggest_network = None
@@ -625,6 +632,7 @@ class ListInstancesClass(ServerClass):
     """
     This is only view on the ServerClass for getting of list of instances.
     """
+
     def cmd(self, argv):
         filter = None
         if len(argv) == 0:
@@ -667,7 +675,7 @@ class ListInstancesClass(ServerClass):
 
 class DeleteInstanceClass(ServerClass):
     """
-     This is only view on the ServerClass for deletting of instance.
+     This is only view on the ServerClass for deleting of instance.
     """
 
     def __parse_params(self, opts, argv):
@@ -706,12 +714,12 @@ class DeleteInstanceClass(ServerClass):
         fids = []
         for fip in fips:
             if (fip.get('OS-EXT-IPS:type') == 'floating'):
-                    idip = self.neutron.\
-                        list_floatingips(floating_ip_address=fip.get('addr'))\
-                        .get('floatingips')[0].get('id')
-                    self.neutron.update_floatingip(idip, {"floatingip": {
-                                                            'port_id': None}})
-                    fids.append(idip)
+                idip = self.neutron. \
+                    list_floatingips(floating_ip_address=fip.get('addr')) \
+                    .get('floatingips')[0].get('id')
+                self.neutron.update_floatingip(idip, {"floatingip": {
+                    'port_id': None}})
+                fids.append(idip)
         progress(result="DONE")
         vols = self.nova.volumes.get_server_volumes(server.id)
         if len(vols) > 0:
@@ -737,13 +745,13 @@ class DeleteInstanceClass(ServerClass):
             else:
                 progress(result="FAIL")
         for fi in fids:
-                if done:
-                    self.neutron.delete_floatingip(fi)
-                else:
-                    interface = server.interface_list().pop()
-                    if interface:
-                        self.neutron.update_floatingip(fi, {"floatingip": {
-                                'port_id': interface.port_id}})
+            if done:
+                self.neutron.delete_floatingip(fi)
+            else:
+                interface = server.interface_list().pop()
+                if interface:
+                    self.neutron.update_floatingip(fi, {"floatingip": {
+                        'port_id': interface.port_id}})
         if 'skip-volume' not in self.params:
             for vol in vols:
                 cvol = self.cinder.volumes.get(vol.id)
@@ -776,6 +784,7 @@ class SnapshotInstanceClass(ServerClass):
     """
      This is only view on the ServerClass for snapshot of instance.
     """
+
     def __parse_params(self, opts, argv):
         params = {}
         params['metadata'] = None
@@ -851,7 +860,7 @@ class SnapshotInstanceClass(ServerClass):
                     svol = self.get_snapshot(it)
                     svol.delete()
                     while len(self.nova
-                                  .volume_snapshots.findall(id=svol.id)) > 0:
+                              .volume_snapshots.findall(id=svol.id)) > 0:
                         time.sleep(1)
                         progress()
                     progress(result="DONE")
@@ -882,8 +891,8 @@ class SnapshotInstanceClass(ServerClass):
                     status = self.nova.servers.get(server.id).status
             progress(result="DONE")
         name = self.params.get('name', "%s_%s" % (
-                               server.name,
-                               datetime.now().strftime("%Y-%m-%d_%X")))
+            server.name,
+            datetime.now().strftime("%Y-%m-%d_%X")))
         if self.params.get('volume') is not None and vols is not None:
             progress(title="Snapshoting of volume:")
             for vol in vols:
@@ -928,8 +937,8 @@ class SnapshotInstanceClass(ServerClass):
              --delete        delete snapshot (with / without snapshot of the volume)
              -u, --umount    umount all volumes
              --volume        create/delete a snapshot of the volume and assign it to the snapshot of the instance
-             -s, --shutdown  shutdown of the instance before snapshot
-             -m, --metadata  metadata for image. pair key=val separated by semicolon
+             -s, --shutdown  shutdown the instance before snapshot
+             -m, --metadata  metadata for image, pair key=val separated by semicolon
              <NAME|ID>   Name or ID of instance / snapshot (deleting)
 
          Examples:
@@ -1027,7 +1036,7 @@ class BootInstanceClass(ServerClass):
         with disable_catch_exception():
             try:
                 images = [self.params['image'], ]
-                dep_images = self.params['image'].to_dict()\
+                dep_images = self.params['image'].to_dict() \
                     .get('dependencies', "").split()
                 for img_name in dep_images:
                     images = [self.get_image(img_name), ] + images
@@ -1065,7 +1074,7 @@ class BootInstanceClass(ServerClass):
               -n, --name      name of the instance
               -f, --flavor    name of flavor
               -v, --volume    the volume snapshot (default: 5minute-satellite5-rpms)
-              --novolume      no voluume snapshot
+              --novolume      no volume snapshot
               -c, --console   display the console output during booting
               --userdata      the paths or URLs to cloud-init scripts
 
@@ -1079,9 +1088,9 @@ class BootInstanceClass(ServerClass):
         progress(result=network['private']['name'])
         progress(title='Obtaining a floating IP:')
         floating_ip = self.neutron.create_floatingip({
-           'floatingip': {
-              'floating_network_id': network['public']['id']
-           }})
+            'floatingip': {
+                'floating_network_id': network['public']['id']
+            }})
         if not floating_ip:
             raise Exception("Problem getting an IP address.")
         else:
@@ -1115,6 +1124,7 @@ class BootInstanceClass(ServerClass):
             self.params['cscript'] += 'echo "\n%s" > /dev/ttyS0;' %\
                 self.cinit_ending_text
             self.params['cscript'] +=  'wall "%s"' % self.cinit_ending_text
+
             progress(result="DONE")
 
     def __setup_volume(self, image):
@@ -1163,7 +1173,7 @@ class BootInstanceClass(ServerClass):
                 self.add_variable(
                     'flavor',
                     self.get_flavor(self.default_flavor))
-        flavor = ("{name} (RAM: {ram} MB, vCPU: {vcpus}, disk: {disk} GB)")\
+        flavor = ("{name} (RAM: {ram} MB, vCPU: {vcpus}, disk: {disk} GB)") \
             .format(**self.variables['flavor'].__dict__)
         progress(result=flavor)
 
@@ -1230,7 +1240,7 @@ class BootInstanceClass(ServerClass):
             else:
                 counter = 300
                 # we can work only with new lines
-                output = output[-1*(length - length_old):]
+                output = output[-1 * (length - length_old):]
                 length_old = length
                 if re.search(r'(.*error.*)', output, flags=re.I & re.M):
                     exit_message = "Errors in the userdata script"
@@ -1248,10 +1258,10 @@ class BootInstanceClass(ServerClass):
                 else:
                     progress()
                 if reg_exit.search(output):
-                        counter = 0
-                        if exit_status is None:
-                            exit_status = True
-                        break
+                    counter = 0
+                    if exit_status is None:
+                        exit_status = True
+                    break
             output = server.get_console_output()
         if not show_output:
             progress(result=exit_message)
@@ -1264,6 +1274,7 @@ class ScenarioClass(ServerClass):
     """
      This is class for scenarios
     """
+
     @staticmethod
     def getInstance(subcmd):
         if subcmd == 'list':
@@ -1379,16 +1390,16 @@ class BootScenarioClass(ScenarioClass):
         params['name'] = "%s-%s" % (USER, params['template_name'] if 'name' not in params else params['name'])
         current_biggest_network, free_ips = self.get_network()
         stack = self.heat.stacks.create(stack_name=params['name'], template=params['template'], parameters={
-                                        'key_name': USER,
-                                        'image': 'RHEL-6.5-Server-x86_64-released',
-                                        'flavor': 'm1.medium',
-                                        'public_net': current_biggest_network['id'],
-                                        'prefix_name': params['name'],
-                                        'private_net_cidr': '192.168.250.0/24',
-                                        'private_net_gateway': '192.168.250.1',
-                                        'private_net_pool_start': '192.168.250.10',
-                                        'private_net_pool_end': '192.168.250.250'
-                                        })
+            'key_name': USER,
+            'image': 'RHEL-6.5-Server-x86_64-released',
+            'flavor': 'm1.medium',
+            'public_net': current_biggest_network['id'],
+            'prefix_name': params['name'],
+            'private_net_cidr': '192.168.250.0/24',
+            'private_net_gateway': '192.168.250.1',
+            'private_net_pool_start': '192.168.250.10',
+            'private_net_pool_end': '192.168.250.250'
+        })
         uid = stack['stack']['id']
         stack = self.heat.stacks.get(stack_id=uid).to_dict()
         while stack['stack_status'] == 'CREATION_IN_PROGRESS':
@@ -1483,8 +1494,9 @@ class ListScenarioClass(ScenarioClass):
 
 class DeleteScenarioClass(ScenarioClass):
     """
-     This is only view on the ServerClass for deletting of instance.
+     This is only view on the ServerClass for deleting of instance.
     """
+
     def cmd(self, argv):
         if len(argv) == 0:
             die("Missing a parameter. Please try 5minute scenario delete <name|id>.")
@@ -1512,6 +1524,7 @@ class DeleteScenarioClass(ScenarioClass):
              5minute scenarios delete 5minute-RHEL6
              5minute scenarios kill 5minute-RHEL6
          """)
+
 
 # -----------------------------------------------------------
 # Manuals
