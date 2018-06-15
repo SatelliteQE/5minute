@@ -1,8 +1,3 @@
-try:  # for pip >= 10
-    from pip._internal.req import parse_requirements
-except ImportError:  # for pip <= 9.0.3
-    from pip.req import parse_requirements
-from pip.download import PipSession
 from setuptools import setup, find_packages
 # To use a consistent encoding
 from codecs import open
@@ -14,8 +9,9 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, 'README'), encoding='utf-8') as f:
     long_description = f.read()
 
-install_reqs = parse_requirements("requirements.txt", session=PipSession())
-reqs = [str(ir.req) for ir in install_reqs]
+with open(path.join(here, 'requirements.txt'), encoding='utf-8') as f:
+    content = f.readlines()
+    reqs = filter(None, [x.strip() for x in content])
 
 
 def get_version():
