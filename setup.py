@@ -13,6 +13,7 @@ with open(path.join(here, 'requirements.txt'), encoding='utf-8') as f:
     content = f.readlines()
     reqs = filter(None, [x.strip() for x in content])
 
+
 def get_version():
     VERSIONFILE = path.join('5minute.spec')
     initfile_lines = open(VERSIONFILE, 'rt').readlines()
