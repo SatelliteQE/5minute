@@ -32,7 +32,6 @@ try:
     from neutronclient.neutron import client as neutron_client
     from novaclient import client as nova_client
     from novaclient import exceptions as nova_exceptions
-    from keystoneauth1.identity import v3 as keystoneIdentity
     from keystoneauth1 import loading as keystoneLoading
     from keystoneauth1 import session as keystoneSession
     from keystoneclient.v3 import client as keystone_client
@@ -212,7 +211,6 @@ class BaseClass(object):
     __keystone = None
     __cinder = None
     __heat = None
-    __token = None
     __session = None
     __neutron = None
     __first_check = False
@@ -271,7 +269,7 @@ class BaseClass(object):
 
     def __get_cinder(self):
         if not self.__cinder:
-            self.__cinder = cinder_client.Client(1, session=self.__get_session())
+            self.__cinder = cinder_client.Client(2, session=self.__get_session())
         return self.__cinder
 
     def __get_heat(self):
@@ -311,11 +309,6 @@ class BaseClass(object):
             self.__nova = nova_client.Client(2, session=self.__get_session())
         return self.__nova
 
-    def __get_token(self):
-        if not self.__token:
-            self.__token = auth.get_token(self.__get_session())
-        return self.__token
-
     def __get_session(self):
         if not self.__session:
             self.__checkenv()
@@ -347,8 +340,6 @@ class BaseClass(object):
             return self.__get_nova()
         elif name == 'keystone':
             return self.__get_keystone()
-        elif name == 'token':
-            return self.__get_token()
         elif name == 'neutron':
             return self.__get_neutron()
         elif name == 'glance':
@@ -543,14 +534,14 @@ class ServerClass(BaseClass):
     @catch_exception("Name of the volume is ambiguous, please use ID.", cinder_exceptions.NoUniqueMatch)
     def get_volume(self, id):
         if re.match(r'^[0-9a-f\-]+$', id) is None:
-            return self.cinder.volumes.find(display_name=id)
+            return self.cinder.volumes.find(name=id)
         else:
             return self.cinder.volumes.get(id)
 
     @catch_exception("The snapshot doesn't exist.")
     def get_snapshot(self, id):
         if re.match(r'^[0-9a-f\-]+$', id) is None:
-            return self.cinder.volume_snapshots.find(display_name=id)
+            return self.cinder.volume_snapshots.find(name=id)
         else:
             return self.cinder.volume_snapshots.get(id)
 
@@ -592,7 +583,6 @@ class ServerClass(BaseClass):
 
         nets = self.get_networks(filter={'name': "^default-", "router:external": False})
         max_network_space = 0
-        current_biggest_network = None
         flist = self.neutron.list_floatingips().get('floatingips')
         res = list()
         for net in nets:
@@ -829,8 +819,8 @@ class SnapshotInstanceClass(ServerClass):
     def cmd(self, argv):
         opts, argv = \
             getopt.gnu_getopt(argv, "husn:m:",
-                          ['help', 'volume', 'umount', 'name=', 'metadata=',
-                           'shutdown', 'delete'])
+                              ['help', 'volume', 'umount', 'name=', 'metadata=',
+                               'shutdown', 'delete'])
         if 'help' not in argv:
             self.params = self.__parse_params(opts, argv)
         if 'help' in argv or 'help' in self.params:
@@ -1012,8 +1002,8 @@ class BootInstanceClass(ServerClass):
     def cmd(self, argv):
         opts, argv = \
             getopt.gnu_getopt(argv, "hcf:n:v:p:",
-                          ['help', 'console', 'flavor=', 'name=', 'volume=',
-                           'userdata=', 'novolume', 'noip'])
+                              ['help', 'console', 'flavor=', 'name=', 'volume=',
+                               'userdata=', 'novolume', 'noip'])
         self.params = self.__parse_params(opts, argv)
         if 'help' in self.params:
             self.help()
@@ -1111,7 +1101,6 @@ class BootInstanceClass(ServerClass):
 
     @catch_exception("The problem with downloading of the userdata script for this image")
     def __setup_userdata_script(self, image):
-        res = None
         filenames = None
         if "userdata" in self.params:
             filenames = self.params['userdata']
@@ -1139,7 +1128,7 @@ class BootInstanceClass(ServerClass):
                 # Is the volume_name name/id of existing volume?
                 try:
                     self.volume = self.get_volume(volume_name)
-                except cinder_exceptions.NotFound as ex:
+                except cinder_exceptions.NotFound:
                     pass
                 if self.volume is None:
                     # The volume_name is name of snapshot,
@@ -1154,7 +1143,7 @@ class BootInstanceClass(ServerClass):
         snap = self.get_snapshot(volume_name)
         name = self.variables.get('name')
         vol = self.cinder.volumes.create(size=snap.size, snapshot_id=snap.id,
-                                         display_name=name)
+                                         name=name)
         while vol.status == 'creating':
             progress()
             time.sleep(1)
@@ -1190,7 +1179,7 @@ class BootInstanceClass(ServerClass):
         if len(self.output_cache) != 0:
             com = 0
             while len(output) > 0 and com < self.output_compare_lines\
-                and com < len(self.output_cache):
+                    and com < len(self.output_cache):
                 # We try to find end of previous output
                 line = output.pop(0)
                 if line == self.output_cache[com]:
@@ -1198,7 +1187,7 @@ class BootInstanceClass(ServerClass):
                 else:
                     com = 0
             if com < self.output_compare_lines and com < len(self.output_cache)\
-                and num_rows is not None and num_rows < 200:
+               and num_rows is not None and num_rows < 200:
                 # If we can not find end of previous output, we try check
                 # twice bigger set
                 return self.__getOutput(server, num_rows * 2)
@@ -1239,7 +1228,6 @@ class BootInstanceClass(ServerClass):
         self.__check_console_output(server)
 
     def __check_console_output(self, server):
-        lindex = 0
         show_output = self.params.get('console')
         exit_status = None
         exit_message = "DONE"
@@ -1253,8 +1241,6 @@ class BootInstanceClass(ServerClass):
         else:
             progress(title="Booting of the instance:")
         while counter > 0 and exit_status is None:
-            # cut off incomplete row
-            #output = output[0:output.rfind("\n")]
             output = "\n".join(self.__getOutput(server, 10))
             if len(output) == 0:
                 counter -= 1
