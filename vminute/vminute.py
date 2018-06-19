@@ -696,7 +696,7 @@ class DeleteInstanceClass(ServerClass):
     @catch_exception("Bad parameter. Please try 5minute kill help.")
     def cmd(self, argv):
         opts, argv = \
-            getopt.getopt(argv, "hs", ['help', 'skip-volume'])
+            getopt.gnu_getopt(argv, "hs", ['help', 'skip-volume'])
         if 'help' not in argv:
             self.params = self.__parse_params(opts, argv)
         if 'help' in argv or 'help' in self.params:
@@ -828,7 +828,7 @@ class SnapshotInstanceClass(ServerClass):
     @catch_exception("Bad parameter. Please try 5minute snapshot help.")
     def cmd(self, argv):
         opts, argv = \
-            getopt.getopt(argv, "husn:m:",
+            getopt.gnu_getopt(argv, "husn:m:",
                           ['help', 'volume', 'umount', 'name=', 'metadata=',
                            'shutdown', 'delete'])
         if 'help' not in argv:
@@ -971,6 +971,10 @@ class BootInstanceClass(ServerClass):
     created_volume = False
     cinit_ending_text = "===============_CLOUD_INIT_FINISHED_==============="
 
+    output_cache = []
+    output_compare_lines = 5
+    output_len = 0
+
     def __parse_params(self, opts, argv):
         params = {}
         for key, val in opts:
@@ -1007,7 +1011,7 @@ class BootInstanceClass(ServerClass):
     @catch_exception("Bad parameter. Please try 5minute boot --help.")
     def cmd(self, argv):
         opts, argv = \
-            getopt.getopt(argv, "hcf:n:v:p:",
+            getopt.gnu_getopt(argv, "hcf:n:v:p:",
                           ['help', 'console', 'flavor=', 'name=', 'volume=',
                            'userdata=', 'novolume', 'noip'])
         self.params = self.__parse_params(opts, argv)
@@ -1121,7 +1125,7 @@ class BootInstanceClass(ServerClass):
                 cscript = re.sub(r'^#!/bin/bash', '', cscript, flags=re.M)
                 self.params['cscript'] += cscript.format(**self.variables)
                 self.params['cscript'] += "\n"
-            self.params['cscript'] += 'echo "\n%s" > /dev/ttyS0;' %\
+            self.params['cscript'] += 'echo "\n%s\n\n" > /dev/ttyS0;' %\
                 self.cinit_ending_text
             self.params['cscript'] += 'wall "%s"' % self.cinit_ending_text
             progress(result="DONE")
@@ -1176,6 +1180,32 @@ class BootInstanceClass(ServerClass):
             .format(**self.variables['flavor'].__dict__)
         progress(result=flavor)
 
+    def __getOutput(self, server, num_rows=None):
+        if len(self.output_cache) == 0:
+            num_rows = None
+        output = server.get_console_output(num_rows)
+        # cut off incomplete row
+        output = output[0:output.rfind("\n")].replace("\b", "").split("\n")
+        output = list(filter(None, output))
+        if len(self.output_cache) != 0:
+            com = 0
+            while len(output) > 0 and com < self.output_compare_lines\
+                and com < len(self.output_cache):
+                # We try to find end of previous output
+                line = output.pop(0)
+                if line == self.output_cache[com]:
+                    com += 1
+                else:
+                    com = 0
+            if com < self.output_compare_lines and com < len(self.output_cache)\
+                and num_rows is not None and num_rows < 200:
+                # If we can not find end of previous output, we try check
+                # twice bigger set
+                return self.__getOutput(server, num_rows * 2)
+        # save the latest few rows for next checking
+        self.output_cache = output[-1*self.output_compare_lines:]
+        return output
+
     def __create_instance(self, image):
         progress(title="Instance name:", result=self.variables.get('name'))
         progress("Creating a new instance:")
@@ -1222,25 +1252,17 @@ class BootInstanceClass(ServerClass):
             print("Booting of the instance:")
         else:
             progress(title="Booting of the instance:")
-        output = server.get_console_output()
-        # cut off incomplete row
-        # output = output[0:output.rfind("\n")]
-        length_old = 0
         while counter > 0 and exit_status is None:
-            length = len(output)
-            if length_old > length:
-                # WA: sometime old_length is bigger then current length
-                length_old = length - 1000
-            if length == length_old:
+            # cut off incomplete row
+            #output = output[0:output.rfind("\n")]
+            output = "\n".join(self.__getOutput(server, 10))
+            if len(output) == 0:
                 counter -= 1
                 time.sleep(1)
                 if not show_output:
                     progress()
             else:
                 counter = 300
-                # we can work only with new lines
-                output = output[-1 * (length - length_old):]
-                length_old = length
                 if re.search(r'(.*error.*)', output, flags=re.I & re.M):
                     exit_message = "Errors in the userdata script"
                 if show_output:
@@ -1254,14 +1276,13 @@ class BootInstanceClass(ServerClass):
                                         r"\033[31;01m\1\033[39;49;00m",
                                         output, flags=re.I & re.M)
                     sys.stdout.write("%s\n" % output)
+                    sys.stdout.flush()
                 else:
                     progress()
                 if reg_exit.search(output):
                     counter = 0
                     if exit_status is None:
                         exit_status = True
-                    break
-            output = server.get_console_output()
         if not show_output:
             progress(result=exit_message)
         if exit_status is None:
@@ -1356,7 +1377,7 @@ class BootScenarioClass(ScenarioClass):
     @catch_exception("Bad parameter. Please try 5minute scenario boot --help.")
     def cmd(self, argv):
         params = dict()
-        opts, argv2 = getopt.getopt(argv, "n:h", ['name=', 'help'])
+        opts, argv2 = getopt.gnu_getopt(argv, "n:h", ['name=', 'help'])
         for key, val in opts:
             if key in ('--help', '-h'):
                 self.help()
