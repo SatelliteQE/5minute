@@ -1,12 +1,12 @@
 Name:	 5minute
-Version: 0.2.30
+Version: 0.2.31
 
-Release: 1%{?dist}
+Release: 0%{?dist}
 Summary: Command line tool for getting instance from OpenStack
 
 License: GPLv2
 URL:     https://github.com/SatelliteQE/5minute
-Source0: https://github.com/BlackSmith/%{name}/archive/%{version}.tar.gz
+Source0: https://github.com/SatelliteQE/%{name}/archive/%{name}-%{version}.tar.gz
 
 BuildArch:      noarch
 BuildRequires:  python3-devel
@@ -52,3 +52,7 @@ Give me an instance of mine image on OpenStack. Hurry!
 %{python3_sitelib}/*
 
 %changelog
+* Tue Jun 19 2018 Martin Korbel <mkorbel@redhat.com> - 0.2.31-0
+- The better detection of end of the installation
+- The option and non-option arguments can be intermixed (GNU style scanning mode)
+- Update cinderclient to API v2
