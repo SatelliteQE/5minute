@@ -1,4 +1,4 @@
-Name:	 5minute
+Name:    5minute
 Version: 0.2.31
 
 Release: 0%{?dist}
