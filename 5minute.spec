@@ -33,7 +33,7 @@ Requires:       python3-glanceclient
 Give me an instance of mine image on OpenStack. Hurry!
 
 %prep
-%autosetup -n %{name}-%{version}
+%autosetup -n %{name}-%{name}-%{version}
 
 
 %build
