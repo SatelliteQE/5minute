@@ -871,7 +871,7 @@ class SnapshotInstanceClass(ServerClass):
                     # self.cinder.volumes.detach(cvol)
                 progress(result="DONE")
         if self.params.get('shutdown') is not None:
-            progress(title="Shutdowning of instance:")
+            progress(title="Shut down the instance:")
             if server.status != 'SHUTOFF':
                 server.stop()
                 status = server.status
@@ -884,7 +884,7 @@ class SnapshotInstanceClass(ServerClass):
             server.name,
             datetime.now().strftime("%Y-%m-%d_%X")))
         if self.params.get('volume') is not None and vols is not None:
-            progress(title="Snapshoting of volume:")
+            progress(title="Snapshotting the volume:")
             for vol in vols:
                 progress()
                 snap = self.cinder.volume_snapshots.create(vol.id,
