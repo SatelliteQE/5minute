@@ -4,6 +4,28 @@ Give me an instance of mine image on OpenStack. Hurry!
 
 ## QuickStart
 
+### Installation
+
+There are several ways of 5minute installation. You pick one of the following.
+
+#### Fedora
+
+5minute package is available in Fedora repository.
+
+    dnf install 5minute
+
+##### Copr repository
+
+For the latest builds enable Copr repository
+
+    dnf copr enable mkorbel/5minute
+
+and install the 5minute.
+
+    dnf install 5minute
+
+#### Manual Installation
+
 To run 5minute you need to install following libs:
 
     python3-keystoneclient
@@ -15,10 +37,9 @@ To run 5minute you need to install following libs:
     python3-xmltodict
     python3-prettytable
 
-To install them from RPMs (Fedora), please do `dnf -y install $( cat requirement-rpms.txt )`
-or install RPM package from https://copr.fedorainfracloud.org/coprs/mkorbel/5minute/packages/
- 
-If you have installed 5minute using `pip install vminute`, they were installed as dependencies. Otherwise, you have to install them manually.
+To install them as RPMs (Fedora), run `dnf -y install $( cat requirement-rpms.txt )`.
+
+If you have installed 5minute using `pip install vminute`, they have been installed as dependencies. Otherwise, you have to install them manually.
 
 ### Get config file
 
