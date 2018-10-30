@@ -515,6 +515,7 @@ class FlavorClass(BaseClass):
 
 
 class ServerClass(BaseClass):
+    private_network_filter = '^default-'
 
     @catch_exception("The instance doesn't exist.", nova_exceptions.NotFound)
     @catch_exception("Name of the instance is ambiguous, please use ID.", nova_exceptions.NoUniqueMatch)
@@ -580,7 +581,7 @@ class ServerClass(BaseClass):
             return max_pool_size - len([ip_addr for ip_addr in flist if
                                         ip_addr.get('floating_ip_address') == cidr])
 
-        nets = self.get_networks(filter={'name': "^default-", "router:external": False})
+        nets = self.get_networks(filter={'name': self.private_network_filter, "router:external": False})
         max_network_space = 0
         flist = self.neutron.list_floatingips().get('floatingips')
         res = list()
