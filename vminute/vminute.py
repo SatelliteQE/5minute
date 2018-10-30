@@ -960,6 +960,7 @@ class BootInstanceClass(ServerClass):
     variables = None
     created_volume = False
     cinit_ending_text = "===============_CLOUD_INIT_FINISHED_==============="
+    check_console_exit_re = r".*login:\s*$"
 
     output_cache = []
     output_compare_lines = 5
@@ -1233,7 +1234,7 @@ class BootInstanceClass(ServerClass):
         exit_message = "DONE"
         counter = 300
         isatty = sys.stderr.isatty()
-        reg_exit = re.compile(r".*login:\s*$")
+        reg_exit = re.compile(self.check_console_exit_re)
         if 'cscript' in self.params and len(self.params['cscript']) > 0:
             reg_exit = re.compile(self.cinit_ending_text)
         if show_output:
