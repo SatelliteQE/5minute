@@ -217,6 +217,7 @@ class BaseClass(object):
     __profiles = "profiles/"
     __scenarios = "scenarios/"
     __check_env_done = False
+    key_name = USER
 
     @catch_exception(
         "The configuration file ~/.5minute/config does not exist.\n"
@@ -264,7 +265,7 @@ class BaseClass(object):
     @catch_exception("Your SSL pub-key is not uploaded to the server yet. "
                      "Please use: 5minute key ~/.ssh/id_dsa.pub")
     def _check_key(self):
-        self.nova.keypairs.get(USER)
+        self.nova.keypairs.get(self.key_name)
 
     def __get_cinder(self):
         if not self.__cinder:
@@ -403,7 +404,7 @@ class KeyClass(BaseClass):
         if not os.access(key, os.R_OK):
             die("SSL key '%s' is not readable." % key)
         with open(key) as fd:
-            self.nova.keypairs.create(USER, fd.read())
+            self.nova.keypairs.create(self.key_name, fd.read())
             print(("The key %s was uploaded successfully." % key))
 
     def cmd(self, argv):
@@ -1202,7 +1203,7 @@ class BootInstanceClass(ServerClass):
         param_dict = {'name': self.variables.get('name'),
                       'image': image.id,
                       'flavor': self.variables['flavor'].id,
-                      'key_name': USER,
+                      'key_name': self.key_name,
                       'nics': [{'net-id': self.variables['private-net']}],
                       'meta': {'fqdn': self.variables["hostname"]},
                       'security_group': ['satellite5'],
@@ -1397,7 +1398,7 @@ class BootScenarioClass(ScenarioClass):
         params['name'] = "%s-%s" % (USER, params['template_name'] if 'name' not in params else params['name'])
         current_biggest_network, free_ips = self.get_network()
         stack = self.heat.stacks.create(stack_name=params['name'], template=params['template'], parameters={
-            'key_name': USER,
+            'key_name': self.key_name,
             'image': 'RHEL-6.5-Server-x86_64-released',
             'flavor': 'm1.medium',
             'public_net': current_biggest_network['id'],
