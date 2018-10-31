@@ -11,7 +11,7 @@ with open(path.join(here, 'README'), encoding='utf-8') as f:
 
 with open(path.join(here, 'requirements.txt'), encoding='utf-8') as f:
     content = f.readlines()
-    reqs = filter(None, [x.strip() for x in content])
+    reqs = [x.strip() for x in content]
 
 
 def get_version():
