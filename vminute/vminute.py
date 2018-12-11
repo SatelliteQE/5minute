@@ -515,6 +515,7 @@ class FlavorClass(BaseClass):
 
 
 class ServerClass(BaseClass):
+    private_network_filter = '^default-'
 
     @catch_exception("The instance doesn't exist.", nova_exceptions.NotFound)
     @catch_exception("Name of the instance is ambiguous, please use ID.", nova_exceptions.NoUniqueMatch)
@@ -580,7 +581,7 @@ class ServerClass(BaseClass):
             return max_pool_size - len([ip_addr for ip_addr in flist if
                                         ip_addr.get('floating_ip_address') == cidr])
 
-        nets = self.get_networks(filter={'name': "^default-", "router:external": False})
+        nets = self.get_networks(filter={'name': self.private_network_filter, "router:external": False})
         max_network_space = 0
         flist = self.neutron.list_floatingips().get('floatingips')
         res = list()
@@ -959,6 +960,7 @@ class BootInstanceClass(ServerClass):
     variables = None
     created_volume = False
     cinit_ending_text = "===============_CLOUD_INIT_FINISHED_==============="
+    check_console_exit_re = r".*login:\s*$"
 
     output_cache = []
     output_compare_lines = 5
@@ -1232,7 +1234,7 @@ class BootInstanceClass(ServerClass):
         exit_message = "DONE"
         counter = 300
         isatty = sys.stderr.isatty()
-        reg_exit = re.compile(r".*login:\s*$")
+        reg_exit = re.compile(self.check_console_exit_re)
         if 'cscript' in self.params and len(self.params['cscript']) > 0:
             reg_exit = re.compile(self.cinit_ending_text)
         if show_output:
