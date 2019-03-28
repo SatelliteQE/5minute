@@ -44,7 +44,7 @@ If you have installed 5minute using `pip install vminute`, they have been instal
 ### Get config file
 
   1. Login into your OpenStack instance WebUI
-  2. Navigate to Access & Security -> API Access
+  2. Navigate to Project -> API Access
   3. Save file from "Download OpenStack RC File" to ~/.5minute/config
 
 ## Get started
