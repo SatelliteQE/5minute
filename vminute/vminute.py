@@ -405,6 +405,10 @@ class KeyClass(BaseClass):
     def __upload_key(self, key):
         if not os.access(key, os.R_OK):
             die("SSL key '%s' is not readable." % key)
+        keypairs = self.nova.keypairs.list()
+        for keypair in keypairs:
+            if (keypair.name == self.key_name):
+                die("You already have keypair with name %s" % self.key_name)
         with open(key) as fd:
             self.nova.keypairs.create(self.key_name, fd.read())
             print(("The key %s was uploaded successfully." % key))
