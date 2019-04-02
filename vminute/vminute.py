@@ -197,7 +197,7 @@ class disable_catch_exception:
 def get_FQDN_from_IP(ip):
     # If we want to support old version of OpenStack, we have to update this function and
     # solve it via serviceman
-    return "host-{1}-{2}-{3}.host.centralci.eng.rdu2.redhat.com".format(*ip.split("."))
+    return "ci-vm-{0}-{1}-{2}-{3}.hosted.upshift.rdu2.redhat.com".format(*ip.split("."))
 
 
 # -----------------------------------------------------------
@@ -241,7 +241,7 @@ class BaseClass(object):
         if self.__check_env_done:
             return
         if not os.environ.get('OS_AUTH_URL') or \
-                not os.environ.get('OS_TENANT_NAME') or \
+                not os.environ.get('OS_PROJECT_NAME') or \
                 not os.environ.get('OS_USERNAME') or \
                 not os.environ.get('OS_PASSWORD'):
             if not self.__first_check:
@@ -302,7 +302,7 @@ class BaseClass(object):
             self.__nova = nova_client.Client(2,
                                              username=os.environ.get('OS_USERNAME'),
                                              password=os.environ.get('OS_PASSWORD'),
-                                             project_id=os.environ.get('OS_TENANT_NAME'),
+                                             project_id=os.environ.get('OS_PROJECT_NAME'),
                                              app_version=os.environ.get('OS_IDENTITY_API_VERSION'),
                                              auth_url=os.environ.get('OS_AUTH_URL'))
         else:
@@ -315,7 +315,9 @@ class BaseClass(object):
             loader = keystoneLoading.get_plugin_loader('password')
             auth = loader.load_from_options(username=os.environ.get('OS_USERNAME'),
                                             password=os.environ.get('OS_PASSWORD'),
-                                            project_id=os.environ.get('OS_TENANT_ID'),
+                                            project_id=os.environ.get('OS_PROJECT_ID'),
+                                            user_domain_name=os.environ.get('OS_USER_DOMAIN_NAME'),
+                                            project_domain_id=os.environ.get('OS_PROJECT_DOMAIN_ID'),
                                             auth_url=os.environ.get('OS_AUTH_URL'))
             self.__session = keystoneSession.Session(auth=auth)
         return self.__session
@@ -403,6 +405,10 @@ class KeyClass(BaseClass):
     def __upload_key(self, key):
         if not os.access(key, os.R_OK):
             die("SSL key '%s' is not readable." % key)
+        keypairs = self.nova.keypairs.list()
+        for keypair in keypairs:
+            if (keypair.name == self.key_name):
+                die("You already have keypair with name %s" % self.key_name)
         with open(key) as fd:
             self.nova.keypairs.create(self.key_name, fd.read())
             print(("The key %s was uploaded successfully." % key))
@@ -434,7 +440,7 @@ class ImagesClass(BaseClass):
         if self.__filter == self.__default_filter:
             # Call simple method for create session object
             self.nova.api_version.is_null()
-            ff = {'filters': {'owner': os.environ.get('OS_TENANT_ID')}}
+            ff = {'filters': {'owner': os.environ.get('OS_PROJECT_ID')}}
 
         # Somewhere between novaclient version 6 and
         # version 9, images was deprecated and replaced
@@ -606,7 +612,8 @@ class ServerClass(BaseClass):
             This function returns public network for private network,
             if the router is present between these nets.
         """
-        ports = self.neutron.list_ports(network_id=pnet['id'], device_owner="network:router_interface").get('ports')
+        ports = self.neutron.list_ports(network_id=pnet['id'],
+                                        device_owner='network:router_interface_distributed').get('ports')
         if len(ports) == 0:
             return None
         router = self.neutron.show_router(ports.pop(0)['device_id'])
