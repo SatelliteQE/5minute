@@ -1,5 +1,5 @@
 Name:    5minute
-Version: 0.2.31
+Version: 0.2.32
 
 Release: 0%{?dist}
 Summary: Command line tool for getting instance from OpenStack
@@ -52,6 +52,10 @@ Give me an instance of mine image on OpenStack. Hurry!
 %{python3_sitelib}/*
 
 %changelog
+* Tue Apr 02 2019 tstrych <tstrych@redhat.com> - 0.2.32-0
+- keystone update to v3
+- code refactoring
+
 * Tue Jun 19 2018 Martin Korbel <mkorbel@redhat.com> - 0.2.31-0
 - The better detection of end of the installation
 - The option and non-option arguments can be intermixed (GNU style scanning mode)
