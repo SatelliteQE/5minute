@@ -1,5 +1,5 @@
 Name:    5minute
-Version: 0.2.32
+Version: 0.2.33
 
 Release: 0%{?dist}
 Summary: Command line tool for getting instance from OpenStack
@@ -52,6 +52,9 @@ Give me an instance of mine image on OpenStack. Hurry!
 %{python3_sitelib}/*
 
 %changelog
+* Thu Jun 20 2019 ogajduse <ogajduse@redhat.com> - 0.2.33-0
+- minor CI changes
+
 * Tue Apr 02 2019 tstrych <tstrych@redhat.com> - 0.2.32-0
 - keystone update to v3
 - code refactoring
