@@ -43,6 +43,7 @@ setup(
     keywords='openstack testing deployment',
     install_requires=reqs,
     packages=find_packages(),
+    include_package_data=True,
     package_data={
         '': ['README.md']
     },
